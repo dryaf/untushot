@@ -19,6 +19,54 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PortalFailure {
+    Cancelled,
+    NoImage,
+    Rejected,
+    Unavailable,
+    TimedOut,
+}
+impl std::fmt::Display for PortalFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Cancelled => crate::i18n::tr("Screenshot abgebrochen"),
+            Self::NoImage => crate::i18n::tr("Keine Aufnahme übernommen."),
+            Self::Rejected => crate::i18n::tr("Der Desktop hat kein Bildschirmfoto geliefert."),
+            Self::Unavailable => crate::i18n::tr("Screenshot-Portal nicht verfügbar."),
+            Self::TimedOut => crate::i18n::tr("Screenshot-Freigabe nach 120 Sekunden abgelaufen"),
+        })
+    }
+}
+impl std::error::Error for PortalFailure {}
+
+fn check_portal_response(code: u32, desktop: &str) -> Result<()> {
+    match code {
+        0 => Ok(()),
+        1 => Err(PortalFailure::Cancelled.into()),
+        // GNOME Shell returns (false, "") when its chooser closes. The GNOME
+        // portal maps that to 2, also used for failures, and the public portal
+        // discards the result details. Do not claim either denial or explicit
+        // cancellation: show a neutral status and retain the code for diagnosis.
+        // https://github.com/GNOME/xdg-desktop-portal-gnome/blob/50.0/src/screenshot.c
+        2 if desktop
+            .split(':')
+            .any(|part| part.eq_ignore_ascii_case("gnome")) =>
+        {
+            Err(
+                anyhow::Error::new(PortalFailure::NoImage).context(crate::i18n::format!(
+                    "Screenshot-Portal: Antwortcode {code}"
+                )),
+            )
+        }
+        _ => Err(
+            anyhow::Error::new(PortalFailure::Rejected).context(crate::i18n::format!(
+                "Screenshot-Portal: Antwortcode {code}"
+            )),
+        ),
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Cancellation {
     stopped: Arc<AtomicBool>,
@@ -58,6 +106,8 @@ pub struct Capture {
     pub image: Pixbuf,
     pub monitors: Vec<Monitor>,
     pub note: String,
+    /// The user already chose and confirmed the image in the desktop UI.
+    pub desktop_confirmed: bool,
 }
 
 pub fn desktop_layout() -> Option<Layout> {
@@ -150,9 +200,22 @@ fn ensure_layout(expected: &Option<Layout>, actual: &Option<Layout>) -> Result<(
     Ok(())
 }
 
+pub fn uses_desktop_chooser(backend: Backend) -> bool {
+    desktop_chooser_for(
+        backend,
+        &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
+    )
+}
+
+fn desktop_chooser_for(backend: Backend, desktop: &str) -> bool {
+    let desktop = desktop.to_ascii_lowercase();
+    backend == Backend::Portal
+        || (backend == Backend::Auto && (desktop.contains("gnome") || desktop.contains("kde")))
+}
+
 pub async fn take(
     backend: Backend,
-    interactive: bool,
+    desktop_selection: bool,
     cancel: Cancellation,
     expected_layout: Option<Layout>,
 ) -> Result<Capture> {
@@ -161,7 +224,7 @@ pub async fn take(
     // The setup choice predates the timer and any save dialog. Never apply that
     // old numeric monitor index to a different topology captured afterwards.
     ensure_layout(&expected_layout, &layout)?;
-    if backend != Backend::Portal && !interactive {
+    if !uses_desktop_chooser(backend) && !desktop_selection {
         if let Some(capture_layout) = layout.clone() {
             let (tx, rx) = futures_channel::oneshot::channel();
             let stopped = cancel.stopped.clone();
@@ -183,6 +246,7 @@ pub async fn take(
                         image,
                         monitors,
                         note: crate::i18n::tr("Alle Monitore · grim").into(),
+                        desktop_confirmed: false,
                     });
                 }
                 Err(error) if backend == Backend::Grim => return Err(error),
@@ -192,16 +256,16 @@ pub async fn take(
             crate::i18n::bail!("Keine Monitor-Geometrie verfügbar");
         }
     }
-    let image = portal(interactive, &cancel).await?;
+    let image = portal(&cancel).await?;
     cancel.check()?;
     ensure_layout(&layout, &desktop_layout())?;
     // The portal returns a URI, not monitor coordinates. Do not invent reliable
     // output mappings from an image's aspect ratio alone.
-    Ok(Capture { image, monitors: Vec::new(), note:
+    Ok(Capture { image, monitors: Vec::new(), desktop_confirmed: true, note:
         crate::i18n::tr("Desktop-Portal · Bildumfang vom Desktop bestimmt; monitorübergreifende Auswahl im gelieferten Bild möglich").into() })
 }
 
-async fn portal(interactive: bool, cancel: &Cancellation) -> Result<Pixbuf> {
+async fn portal(cancel: &Cancellation) -> Result<Pixbuf> {
     const SERVICE: &str = "org.freedesktop.portal.Desktop";
     const REQUEST: &str = "org.freedesktop.portal.Request";
     let connection = gio::bus_get_future(gio::BusType::Session)
@@ -236,25 +300,50 @@ async fn portal(interactive: bool, cancel: &Cancellation) -> Result<Pixbuf> {
     );
     let options = HashMap::from([
         ("handle_token", token.to_variant()),
-        ("interactive", interactive.to_variant()),
+        // UntuShot hides before capture. A non-interactive request can need an
+        // access dialog, which GNOME rejects for an unfocused/hidden app (in
+        // particular on cold start). Use the desktop's explicit capture UI for
+        // every portal capture; the returned image is ready to edit.
+        ("interactive", true.to_variant()),
         ("modal", false.to_variant()),
     ]);
     *cancel.request.borrow_mut() = Some((connection.clone(), path.clone()));
     let response = async {
         cancel.check()?;
-        let handle = connection.call_future(Some(SERVICE), "/org/freedesktop/portal/desktop",
-            "org.freedesktop.portal.Screenshot", "Screenshot", Some(&("", options).to_variant()),
-            None, gio::DBusCallFlags::NONE, 30_000).await
-            .context(crate::i18n::tr("Screenshot-Portal nicht verfügbar. Passendes xdg-desktop-portal-Backend installieren oder --backend grim verwenden."))?;
+        let handle = connection
+            .call_future(
+                Some(SERVICE),
+                "/org/freedesktop/portal/desktop",
+                "org.freedesktop.portal.Screenshot",
+                "Screenshot",
+                Some(&("", options).to_variant()),
+                None,
+                gio::DBusCallFlags::NONE,
+                30_000,
+            )
+            .await
+            .context(PortalFailure::Unavailable)?;
         let returned = handle.child_value(0).str().unwrap_or("").to_string();
-        if returned != path { crate::i18n::bail!("Portal verwendet einen unerwarteten Request-Pfad: {returned}"); }
+        if returned != path {
+            crate::i18n::bail!("Portal verwendet einen unerwarteten Request-Pfad: {returned}");
+        }
         cancel.check()?;
-        let cancellation=async {let started=Instant::now();loop{cancel.check()?;if started.elapsed()>Duration::from_secs(120){crate::i18n::bail!("Screenshot-Freigabe nach 120 Sekunden abgelaufen");}glib::timeout_future(Duration::from_millis(50)).await;}};
+        let cancellation = async {
+            let started = Instant::now();
+            loop {
+                cancel.check()?;
+                if started.elapsed() > Duration::from_secs(120) {
+                    return Err(PortalFailure::TimedOut.into());
+                }
+                glib::timeout_future(Duration::from_millis(50)).await;
+            }
+        };
         match futures_util::future::select(Box::pin(rx), Box::pin(cancellation)).await {
             futures_util::future::Either::Left((reply, _)) => Ok(reply?),
-            futures_util::future::Either::Right((result,_)) => result,
+            futures_util::future::Either::Right((result, _)) => result,
         }
-    }.await;
+    }
+    .await;
     connection.signal_unsubscribe(subscription);
     cancel.request.borrow_mut().take();
     if response.is_err() {
@@ -264,11 +353,10 @@ async fn portal(interactive: bool, cancel: &Cancellation) -> Result<Pixbuf> {
     let (code, results) = response
         .get::<(u32, HashMap<String, glib::Variant>)>()
         .context(crate::i18n::tr("Ungültige Portal-Antwort"))?;
-    match code {
-        0 => {}
-        1 => crate::i18n::bail!("Screenshot abgebrochen"),
-        _ => crate::i18n::bail!("Desktop-Portal hat die Aufnahme abgelehnt"),
-    }
+    check_portal_response(
+        code,
+        &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
+    )?;
     let uri = results
         .get("uri")
         .and_then(|v| v.str())
@@ -284,6 +372,54 @@ async fn portal(interactive: bool, cancel: &Cancellation) -> Result<Pixbuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn desktop_chooser_routing_respects_explicit_backend() {
+        for desktop in ["GNOME", "ubuntu:GNOME", "KDE"] {
+            assert!(desktop_chooser_for(Backend::Auto, desktop));
+            assert!(!desktop_chooser_for(Backend::Grim, desktop));
+        }
+        for desktop in ["sway", "Hyprland", ""] {
+            assert!(!desktop_chooser_for(Backend::Auto, desktop));
+            assert!(desktop_chooser_for(Backend::Portal, desktop));
+        }
+    }
+
+    #[test]
+    fn portal_cancellation_is_distinct_from_failure() {
+        assert!(check_portal_response(0, "GNOME").is_ok());
+        for (code, expected) in [
+            (1, PortalFailure::Cancelled),
+            (2, PortalFailure::Rejected),
+            (99, PortalFailure::Rejected),
+        ] {
+            assert_eq!(
+                check_portal_response(code, "KDE")
+                    .unwrap_err()
+                    .downcast_ref::<PortalFailure>(),
+                Some(&expected)
+            );
+        }
+        for desktop in ["GNOME", "ubuntu:GNOME", "gnome"] {
+            for (code, expected) in [
+                (1, PortalFailure::Cancelled),
+                (2, PortalFailure::NoImage),
+                (99, PortalFailure::Rejected),
+            ] {
+                assert_eq!(
+                    check_portal_response(code, desktop)
+                        .unwrap_err()
+                        .downcast_ref::<PortalFailure>(),
+                    Some(&expected)
+                );
+            }
+        }
+        let unavailable = anyhow::anyhow!("D-Bus unavailable").context(PortalFailure::Unavailable);
+        assert_eq!(
+            unavailable.downcast_ref::<PortalFailure>(),
+            Some(&PortalFailure::Unavailable)
+        );
+    }
 
     #[test]
     fn timer_plan_rejects_reordered_removed_moved_or_rescaled_monitors() {

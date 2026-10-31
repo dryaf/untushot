@@ -842,7 +842,7 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
     e.zoom(None);
     e.show_tools.set_active(false);
     e.show_layers.set_active(false);
-    r.shot(e, "Tab · Give the image the whole workspace", 1.6);
+    r.shot(e, "Ctrl+F6 · Give the image the whole workspace", 1.6);
     e.show_tools.set_active(true);
     e.show_layers.set_active(true);
     for pos in [820, 780, 740] {
@@ -853,38 +853,53 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
 
     reset(e);
     seed(e);
-    let mut r = Recorder::new("12-projects", "Save the edit. Not just the pixels.");
-    e.file_menu.set_active(true);
-    r.point(e, &e.file_menu);
+    let mut r = Recorder::new("12-projects", "Your edits, saved automatically.");
+    *e.session.borrow_mut() = Some(
+        recovery::Session::open(&directory.join("project-recovery"), false)
+            .unwrap()
+            .0,
+    );
+    let screenshot = directory.join("Editable-review.png");
+    *e.export_path.borrow_mut() = Some(screenshot.clone());
+    assert!(e.save());
+    e.flush_autosave().unwrap();
+    let project = crate::autosave::sidecar_path(&screenshot);
+    assert!(project.is_file());
+    e.storage_button.set_active(true);
     r.shot(
         e,
-        "Save project · Keep the original, crop and every layer",
-        1.8,
+        "PNG exported · Editable layers saved beside it automatically",
+        2.,
     );
-    e.file_menu.set_active(false);
-    let project = directory.join("Product-review.untushot");
-    assert!(e.save_project_to(&project));
-    r.pointer = None;
-    r.shot(e, "A .untushot file keeps your work fully editable", 1.6);
+    e.storage_button.set_active(false);
     e.select_new_image(0, "Keep editing");
     e.nudge(40., 0., false);
-    r.shot(
-        e,
-        "The project status tracks changes separately from PNG export",
-        1.5,
+    r.shot(e, "Keep editing · No project-save prompt", 1.5);
+    e.flush_autosave().unwrap();
+    let saved_layers = e
+        .state
+        .borrow()
+        .document
+        .as_ref()
+        .unwrap()
+        .annotations()
+        .to_vec();
+    assert!(e.open_path(&screenshot));
+    assert_eq!(
+        e.state.borrow().document.as_ref().unwrap().annotations(),
+        saved_layers
     );
-    e.history(false);
-    e.mark_project_saved();
-    assert!(e.open_path(&project));
     r.shot(
         e,
-        "Open project · All layers return as individual objects",
+        "Reopen the PNG · Its sidecar restores every editable layer",
         1.8,
     );
     e.select_new_image(2, "Editable text restored");
     e.text(Point::default());
     r.shot(e, "Pick up exactly where you left off", 1.8);
     e.finish_text(false);
+    e.flush_autosave().unwrap();
+    drop(e.session.borrow_mut().take());
     r.finish();
 
     reset(e);
@@ -1070,18 +1085,13 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
 
     reset(e);
     e.mark_project_saved();
+    e.args.borrow_mut().backend = crate::Backend::Portal;
+    e.setup.set_backend(crate::Backend::Portal);
     e.show_setup();
-    let mut r = Recorder::new("19-capture", "From capture to canvas, in a few steps.");
-    r.shot(e, "Region, entire screen or system selection", 1.6);
-    e.setup.full.set_active(true);
-    r.shot(e, "Entire screen · Start with the full picture", 1.3);
-    e.setup.system.set_active(true);
-    r.shot(
-        e,
-        "System selection · Let your desktop handle the choice",
-        1.4,
-    );
-    e.setup.region.set_active(true);
+    let mut r = Recorder::new("19-capture", "Choose once. Start editing.");
+    e.setup.options.set_expanded(false);
+    r.shot(e, "GNOME handles area, window and screen selection", 1.8);
+    e.setup.options.set_expanded(true);
     e.setup.delay.set_value(3.);
     r.point(e, &e.setup.delay);
     r.shot(e, "Set a delay · Give yourself time to prepare", 1.5);
@@ -1091,20 +1101,29 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
     r.shot(e, "The countdown can be cancelled", 1.2);
     e.cancel_capture();
     r.shot(e, "Cancel · Keep your existing document", 1.4);
-    e.accept_capture(
-        document(),
-        "Demo capture result · No desktop screen was recorded",
-        Mode::Region,
+    e.finish_capture(
+        Ok(crate::capture::Capture {
+            image: sample(0, false),
+            monitors: Vec::new(),
+            note: "Synthetic capture result · Native chooser not recorded".into(),
+            desktop_confirmed: true,
+        }),
+        Mode::System,
         None,
     );
-    r.shot(e, "Select the region before entering the editor", 1.3);
+    assert!(!e.state.borrow().selecting_region);
+    r.shot(
+        e,
+        "Confirmed capture · Straight into the editor, no second selection",
+        1.8,
+    );
     draw_gesture(
         e,
         &mut r,
         Tool::Select,
         (28., 239.),
         (973., 419.),
-        "Draw the region · Confirm when it is right",
+        "Optional crop · Adjust the image whenever you need to",
     );
     e.magnifier.set_active(true);
     let (mx, my) = canvas(e, 520., 320.);
@@ -1175,14 +1194,14 @@ fn menu_features(e: &Rc<Editor>, app: &gtk::Application) {
     r.widget(
         &menu,
         None,
-        "Region capture · Also available with the desktop shortcut Ctrl+Shift+X",
+        "Take a screenshot · Also available with Ctrl+Shift+X",
         1.8,
     );
     menu.select_item(&items[3]);
     r.widget(
         &menu,
         None,
-        "Delayed capture · Three seconds to prepare",
+        "Open the desktop chooser in three seconds",
         1.8,
     );
     menu.select_item(items.last().unwrap());

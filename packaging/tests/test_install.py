@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 import json
 import os
+import subprocess
 
 spec = importlib.util.spec_from_file_location('installer', Path(__file__).parents[1] / 'install.py')
 install = importlib.util.module_from_spec(spec)
@@ -151,6 +152,86 @@ class RenameMigration(unittest.TestCase):
             self.assertIn('Name=UntuShot', desktop)
             self.assertIn('Exec="/usr/bin/untushot" -- %f', desktop)
             self.assertNotIn('rustshot', desktop)
+
+class LauncherEnvironment(unittest.TestCase):
+    def test_snap_launcher_clears_foreign_loaders_and_preserves_arguments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary = root / 'binary with spaces'
+            install.atomic_write(binary, '#!/usr/bin/python3\nimport json, os, sys\nprint(json.dumps({"env": dict(os.environ), "args": sys.argv[1:]}))\n', 0o755)
+            launcher = root / 'launcher'
+            install.atomic_write(launcher, install.wrapper(binary), 0o755)
+            env = dict(os.environ, SNAP='/snap/code/test', **{key: '/snap/foreign/modules' for key in install.HOST_GTK_ENV})
+            arguments = ['--open', '/tmp/image with spaces.png']
+            result = subprocess.run([str(launcher), *arguments], env=env, check=True, capture_output=True, text=True)
+            observed = json.loads(result.stdout)
+            self.assertEqual(observed['args'], arguments)
+            for key in install.HOST_GTK_ENV:
+                self.assertNotIn(key, observed['env'])
+            self.assertEqual(observed['env']['GSETTINGS_SCHEMA_DIR'], '/usr/share/glib-2.0/schemas')
+            self.assertEqual(observed['env']['XDG_DATA_DIRS'], '/usr/local/share:/usr/share')
+            env.pop('SNAP')
+            result = subprocess.run([str(launcher)], env=env, check=True, capture_output=True, text=True)
+            observed = json.loads(result.stdout)['env']
+            # Real integrated terminals can retain Snap loader paths after
+            # removing the SNAP marker. These must still be sanitized.
+            for key in install.HOST_GTK_ENV:
+                self.assertNotIn(key, observed)
+            env.update({key: '/opt/custom-host/modules' for key in install.HOST_GTK_ENV})
+            env.update(GSETTINGS_SCHEMA_DIR='/usr/share/glib-2.0/schemas', XDG_DATA_DIRS='/usr/share')
+            result = subprocess.run([str(launcher)], env=env, check=True, capture_output=True, text=True)
+            observed = json.loads(result.stdout)['env']
+            for key in install.HOST_GTK_ENV:
+                self.assertEqual(observed[key], env[key])
+
+    def test_old_launcher_is_still_recognized_for_migration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory)
+            launcher = prefix / 'bin/rustshot'
+            desktop = install.desktop_file(launcher).replace(install.APP, install.LEGACY_APP)
+            install.atomic_write(prefix / f'share/applications/{install.LEGACY_APP}.desktop', desktop)
+            for version in (0, 1, 2):
+                install.atomic_write(launcher, install.wrapper(prefix / 'libexec/rustshot', legacy=version))
+                self.assertTrue(install.legacy_owned(prefix))
+
+
+class StartupDiagnostics(unittest.TestCase):
+    def test_reports_crash_with_current_log_instead_of_blame_on_tray(self):
+        with tempfile.TemporaryDirectory() as directory, mock.patch.dict(os.environ, XDG_STATE_HOME=directory):
+            log = Path(directory) / 'untushot/background.log'
+            install.atomic_write(log, 'old unrelated error\n')
+            process = mock.Mock()
+            process.poll.return_value = 127
+
+            def crashed(*args, **kwargs):
+                kwargs['stderr'].write(b'symbol lookup error: GLIBC_PRIVATE\n')
+                kwargs['stderr'].flush()
+                return process
+
+            with mock.patch.object(install.subprocess, 'Popen', side_effect=crashed), \
+                    mock.patch.object(install.time, 'sleep'), mock.patch.object(install.subprocess, 'run') as status:
+                with self.assertRaisesRegex(RuntimeError, 'Start fehlgeschlagen') as failure:
+                    install.start(Path('/test/untushot'))
+                self.assertIn('GLIBC_PRIVATE', str(failure.exception))
+                self.assertNotIn('old unrelated error', str(failure.exception))
+                self.assertNotIn('AppIndicators', str(failure.exception))
+                status.assert_not_called()
+
+    def test_accepts_confirmed_tray_and_distinguishes_missing_host(self):
+        with tempfile.TemporaryDirectory() as directory, mock.patch.dict(os.environ, XDG_STATE_HOME=directory), \
+                mock.patch.object(install.subprocess, 'Popen') as spawn, \
+                mock.patch.object(install.subprocess, 'run') as status, mock.patch.object(install.time, 'sleep'):
+            spawn.return_value.poll.return_value = None
+            status.return_value = subprocess.CompletedProcess([], 0, '{"running":true,"tray_connected":true}', '')
+            install.start(Path('/test/untushot'))
+            status.return_value = subprocess.CompletedProcess([], 0, '{"running":true,"tray_connected":false}', '')
+            with self.assertRaisesRegex(RuntimeError, 'läuft, aber das Tray'):
+                install.start(Path('/test/untushot'))
+            status.return_value = subprocess.CompletedProcess([], 127, '', 'loader failed')
+            with self.assertRaisesRegex(RuntimeError, 'Hintergrundprozess') as failure:
+                install.start(Path('/test/untushot'))
+            self.assertIn('loader failed', str(failure.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

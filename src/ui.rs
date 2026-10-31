@@ -1,5 +1,5 @@
 use crate::{
-    capture,
+    autosave, capture,
     document::{self, Alignment, Annotation, Document, Tool},
     geometry::{Layout, Point, Rect},
     icons,
@@ -11,11 +11,18 @@ use crate::{
 };
 use anyhow::Result;
 use gtk::prelude::*;
+#[cfg(test)]
+mod autosave_tests;
+mod dialogs;
 mod layer_drag;
 mod layer_rename;
 #[cfg(test)]
+mod portal_tests;
+#[cfg(test)]
 mod showcase;
 mod text_history;
+#[cfg(test)]
+mod ux_tests;
 use std::{
     cell::{Cell, RefCell},
     path::PathBuf,
@@ -149,6 +156,14 @@ struct LayerRow {
 }
 
 pub(crate) struct Editor {
+    error_dialog: RefCell<Option<gtk::MessageDialog>>,
+    shortcuts_dialog: RefCell<Option<gtk::Dialog>>,
+    close_to_tray: gtk::CheckButton,
+    close_notice: gtk::InfoBar,
+    close_notice_text: gtk::Label,
+    property_scroll: gtk::ScrolledWindow,
+    auto_layers_hidden: Cell<bool>,
+    layers_manually_shown: Cell<bool>,
     layer_drag: RefCell<Option<layer_drag::Session>>,
     layer_rename: Cell<Option<(usize, u64, u64)>>,
     layer_drag_serial: Cell<u64>,
@@ -188,6 +203,11 @@ pub(crate) struct Editor {
     project_save_button: gtk::Button,
     export_path: RefCell<Option<PathBuf>>,
     project_path: RefCell<Option<PathBuf>>,
+    autosave_target: RefCell<Option<std::sync::Arc<autosave::Target>>>,
+    autosave_source: RefCell<Option<PathBuf>>,
+    automatic_project: Cell<bool>,
+    autosave_existing: Cell<bool>,
+    recovery_content: Cell<Option<u64>>,
     project_as: gtk::Button,
     recent: Rc<crate::history::Strip>,
     new_capture: gtk::Button,
@@ -277,7 +297,8 @@ pub(crate) struct Editor {
 fn button(label: &str, tooltip: &str) -> gtk::Button {
     let button = gtk::Button::with_label(label);
     button.set_tooltip_text(Some(tooltip));
-    button.set_can_focus(false);
+    button.set_can_focus(true);
+    button.set_focus_on_click(false);
     button
 }
 
@@ -289,7 +310,9 @@ fn icon_button(icon: &'static str, label: &str, tooltip: &str) -> gtk::Button {
         b.style_context().add_class("text-button");
     }
     b.set_tooltip_text(Some(tooltip));
-    b.set_can_focus(false);
+    b.set_can_focus(true);
+    b.set_focus_on_click(false);
+    icons::accessible_name(&b, if label.is_empty() { tooltip } else { label });
     b.add(&icons::button_content(icon, label));
     b
 }
@@ -306,8 +329,10 @@ pub(crate) fn launch(app: &gtk::Application, args: Args) -> Rc<Editor> {
     let demo = args.demo;
     let editor = build(app, args);
     if !demo {
+        editor.load_preferences(&Preferences::path());
         match recovery::Session::open(&recovery::default_directory(), restore) {
             Ok((session, document)) => {
+                let restored_autosave = session.restored_autosave.clone();
                 *editor.session.borrow_mut() = Some(session);
                 if let Some(doc) = document {
                     editor.set_document(
@@ -317,6 +342,18 @@ pub(crate) fn launch(app: &gtk::Application, args: Args) -> Rc<Editor> {
                         ),
                     );
                 }
+                if let Some(target) = restored_autosave
+                    .as_ref()
+                    .and_then(|l| autosave::Target::restore(l).ok())
+                {
+                    editor.project_path.replace(Some(target.path.clone()));
+                    editor
+                        .autosave_source
+                        .replace(restored_autosave.unwrap().source);
+                    editor.autosave_target.replace(Some(target));
+                    editor.automatic_project.set(true);
+                    editor.autosave_existing.set(true);
+                }
                 if let Err(error) = editor.save_recovery() {
                     editor
                         .status
@@ -325,7 +362,6 @@ pub(crate) fn launch(app: &gtk::Application, args: Args) -> Rc<Editor> {
             }
             Err(error) => editor.error(error),
         }
-        editor.load_preferences(&Preferences::path());
         let weak = Rc::downgrade(&editor);
         glib::timeout_add_local(Duration::from_secs(1), move || {
             let Some(e) = weak.upgrade() else {
@@ -381,7 +417,15 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     let file_popover = gtk::Popover::new(Some(&file_menu));
     let file_actions = gtk::Box::new(gtk::Orientation::Vertical, 4);
     file_actions.set_border_width(8);
-    file_popover.add(&file_actions);
+    let file_scroll = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
+    file_scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+    file_scroll.set_propagate_natural_width(true);
+    file_scroll.set_propagate_natural_height(true);
+    file_scroll.set_min_content_height(180);
+    file_scroll.set_max_content_height(480);
+    file_scroll.set_overlay_scrolling(false);
+    file_scroll.add(&file_actions);
+    file_popover.add(&file_scroll);
     file_menu.set_popover(Some(&file_popover));
     let header = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     titlebar.pack_start(&header);
@@ -406,14 +450,14 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     );
     let project = icon_button(
         "save",
-        crate::i18n::tr("Projekt speichern"),
+        crate::i18n::tr("Bearbeitbares Projekt speichern"),
         crate::i18n::tr(
             "Zum Weiterbearbeiten: geöffnetes Projekt aktualisieren oder Ziel wählen · Strg+Alt+S",
         ),
     );
     let project_as = icon_button(
         "save",
-        crate::i18n::tr("Projekt speichern unter …"),
+        crate::i18n::tr("Bearbeitbares Projekt speichern unter …"),
         crate::i18n::tr("Bearbeitung in einer neuen Projektdatei speichern · Strg+Alt+Umschalt+S"),
     );
     let copy = icon_button(
@@ -423,8 +467,8 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     );
     let export_button = icon_button(
         "export",
-        crate::i18n::tr("PNG exportieren"),
-        crate::i18n::tr("Fertiges Bild als PNG speichern · Strg+S"),
+        crate::i18n::tr("Bild exportieren"),
+        crate::i18n::tr("Fertiges Bild als PNG exportieren · Strg+S"),
     );
     export_button.style_context().add_class("suggested-action");
     let paste = icon_button(
@@ -444,12 +488,12 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     );
     let save = icon_button(
         "export",
-        crate::i18n::tr("PNG speichern"),
+        crate::i18n::tr("Bild exportieren"),
         crate::i18n::tr("Bestätigten PNG-Export aktualisieren, sonst Ziel wählen · Strg+S"),
     );
     let save_as = icon_button(
         "export",
-        crate::i18n::tr("PNG speichern unter …"),
+        crate::i18n::tr("Bild exportieren unter …"),
         crate::i18n::tr("Neues PNG-Ziel wählen · Strg+Umschalt+S"),
     );
     for action in [
@@ -492,7 +536,9 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     let close_window = icon_button(
         "close",
         crate::i18n::tr("Fenster schließen"),
-        crate::i18n::tr("Strg+W · Bei aktivem Tray im Hintergrund weiterlaufen"),
+        crate::i18n::tr(
+            "Strg+W · Schließt die Anwendung, sofern Hintergrundbetrieb nicht aktiviert ist",
+        ),
     );
     let quit_app = icon_button(
         "quit",
@@ -507,10 +553,42 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         let popover = file_popover.clone();
         action.connect_clicked(move |_| popover.popdown());
     }
-    file_actions.show_all();
+    let close_to_tray = gtk::CheckButton::with_label(crate::i18n::tr(
+        "Beim Schließen im Hintergrund weiterlaufen",
+    ));
+    close_to_tray.set_tooltip_text(Some(crate::i18n::tr("Aufnahmekürzel bleiben aktiv. Mit „UntuShot beenden“ wird die Anwendung vollständig geschlossen.")));
+    file_actions.pack_start(&close_to_tray, false, false, 6);
+    let shortcuts = icon_button(
+        "text",
+        crate::i18n::tr("Tastenkürzel …"),
+        crate::i18n::tr("Tastenkürzel anzeigen · F1"),
+    );
+    file_actions.pack_start(&shortcuts, false, false, 0);
+    file_scroll.show_all();
     export_actions.pack_start(&copy, false, false, 0);
     export_actions.pack_start(&export_button, false, false, 0);
     let setup = Setup::new(&args);
+    let capture_options = icon_button(
+        "timer",
+        crate::i18n::tr("Aufnahmeoptionen …"),
+        crate::i18n::tr("Bildschirm und Verzögerung"),
+    );
+    capture_options.style_context().add_class("file-action");
+    file_actions.pack_start(&capture_options, false, false, 0);
+    file_actions.pack_start(
+        &gtk::Separator::new(gtk::Orientation::Horizontal),
+        false,
+        false,
+        6,
+    );
+    for action in [&setup.web, &setup.demo] {
+        action.style_context().add_class("file-action");
+        file_actions.pack_start(action, false, false, 0);
+        let popover = file_popover.clone();
+        action.connect_clicked(move |_| popover.popdown());
+    }
+    file_actions.show_all();
+    icons::name_controls(file_actions.upcast_ref());
     let stack = gtk::Stack::new();
     stack.set_transition_type(gtk::StackTransitionType::None);
     let setup_scroll = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
@@ -529,7 +607,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         false,
         0,
     );
-    let monitors = crate::setup::source_selector(280, 36);
+    let monitors = crate::setup::source_selector(160, 36);
     monitors.set_tooltip_text(Some(crate::i18n::tr(
         "Ganzes Bild oder Monitor wählen. Frei zuschneiden mit Werkzeug 1.",
     )));
@@ -555,7 +633,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     icons::icon_control(&show_layers);
     show_layers.set_active(true);
     show_layers.set_tooltip_text(Some(crate::i18n::tr(
-        "Ebenen ein-/ausklappen · F9 · Tab: beide Seitenleisten",
+        "Ebenen ein-/ausklappen · F9 · Strg+F6: beide Seitenleisten",
     )));
     show_tools.style_context().add_class("flat");
     show_layers.style_context().add_class("flat");
@@ -585,7 +663,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     let sidebar = gtk::Box::new(gtk::Orientation::Vertical, 4);
     sidebar.set_widget_name("sidebar");
     sidebar.set_border_width(12);
-    sidebar.set_size_request(182, -1);
+    sidebar.set_size_request(168, -1);
     sidebar.pack_start(&caption(crate::i18n::tr("Werkzeuge")), false, false, 8);
     let mut tools: Vec<gtk::RadioButton> = Vec::new();
     for (index, (tool, name, key)) in Tool::ALL.into_iter().enumerate() {
@@ -603,7 +681,9 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         radio.set_mode(false);
         radio.style_context().add_class("flat");
         radio.style_context().add_class("tool-button");
-        radio.set_can_focus(false);
+        radio.set_can_focus(true);
+        radio.set_focus_on_click(false);
+        icons::accessible_name(&radio, name);
         radio.set_tooltip_text(Some(&crate::i18n::format!("{name} · {key}")));
         let row = icons::content(icons::tool(tool), name);
         let shortcut = gtk::Label::new(Some(key));
@@ -697,6 +777,10 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     area.set_hexpand(true);
     area.set_vexpand(true);
     area.set_can_focus(true);
+    icons::accessible_name(
+        &area,
+        crate::i18n::tr("Zeichenfläche · F6 · Werkzeuge mit V, M oder 1–9 wählen"),
+    );
     area.add_events(
         gdk::EventMask::BUTTON_PRESS_MASK
             | gdk::EventMask::BUTTON_RELEASE_MASK
@@ -712,6 +796,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     inline_box.set_halign(gtk::Align::Start);
     inline_box.set_valign(gtk::Align::Start);
     let inline_input = gtk::TextView::new();
+    inline_input.set_accepts_tab(false);
     inline_input.set_wrap_mode(gtk::WrapMode::None);
     inline_input.set_left_margin(0);
     inline_input.set_right_margin(0);
@@ -784,13 +869,20 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     empty_layers.show_all();
     let layer_scroll = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
     layer_scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
-    layer_scroll.set_min_content_height(48);
+    layer_scroll.set_min_content_height(120);
     layer_scroll.add(&layers);
-    // Reserve the natural height of the controls below; only the layer list
-    // receives spare height and scrolls when its rows no longer fit.
-    inspector.pack_start(&layer_scroll, true, true, 0);
+    let inspector_split = gtk::Paned::new(gtk::Orientation::Vertical);
+    inspector_split.set_wide_handle(true);
+    inspector_split.pack1(&layer_scroll, true, false);
+    inspector_split.set_position(280);
+    inspector.pack_start(&inspector_split, true, true, 0);
     let layer_options = gtk::Box::new(gtk::Orientation::Vertical, 6);
-    inspector.pack_end(&layer_options, false, false, 0);
+    let property_scroll = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
+    property_scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+    property_scroll.set_overlay_scrolling(false);
+    property_scroll.set_min_content_height(120);
+    property_scroll.add(&layer_options);
+    inspector_split.pack2(&property_scroll, true, false);
     let layer_actions = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     layer_actions.set_homogeneous(true);
     layer_actions.style_context().add_class("linked");
@@ -1008,10 +1100,19 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     instruction.set_line_wrap(true);
     instruction.set_max_width_chars(65);
     stack.add_named(&page, "editor");
+    let close_notice = gtk::InfoBar::new();
+    close_notice.set_message_type(gtk::MessageType::Info);
+    close_notice.set_no_show_all(true);
+    close_notice.add_button(crate::i18n::tr("Verstanden"), gtk::ResponseType::Close);
+    let close_notice_text = gtk::Label::new(None);
+    close_notice_text.set_line_wrap(true);
+    close_notice_text.set_max_width_chars(85);
+    close_notice_text.set_xalign(0.);
+    close_notice.content_area().add(&close_notice_text);
+    root.pack_start(&close_notice, false, false, 0);
     root.pack_start(&stack, true, true, 0);
     let recent = crate::history::Strip::new((!args.demo).then(crate::history::directory));
-    let history_setup = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    root.pack_start(&history_setup, false, false, 0);
+    let history_setup = setup.history.clone();
     recent.attach_to(&history_setup);
     let status = gtk::Label::new(Some(crate::i18n::tr("Bereit für deine nächste Aufnahme.")));
     status.set_widget_name("status");
@@ -1044,7 +1145,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     storage_details.pack_start(&storage_title, false, false, 0);
     storage_details.pack_start(&storage, false, false, 0);
     let storage_hint = gtk::Label::new(Some(crate::i18n::tr(
-        "Autosicherung ersetzt keine gespeicherte Bild- oder Projektdatei.",
+        "PNG für die Weitergabe exportieren. Projekte behalten das Original und alle Ebenen.",
     )));
     storage_hint.set_line_wrap(true);
     storage_hint.set_max_width_chars(42);
@@ -1056,7 +1157,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     storage_button.set_popover(Some(&storage_popover));
     let project_save_button = icon_button(
         "save",
-        crate::i18n::tr("Projekt speichern"),
+        crate::i18n::tr("Bearbeitbares Projekt speichern"),
         crate::i18n::tr("Alle Ebenen zum Weiterbearbeiten speichern · Strg+Alt+S"),
     );
     let project_status = gtk::Box::new(gtk::Orientation::Horizontal, 6);
@@ -1066,6 +1167,14 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     root.pack_start(&footer, false, false, 0);
     window.add(&root);
     let editor = Rc::new_cyclic(|weak| Editor {
+        error_dialog: RefCell::new(None),
+        shortcuts_dialog: RefCell::new(None),
+        close_to_tray,
+        close_notice,
+        close_notice_text,
+        property_scroll,
+        auto_layers_hidden: Cell::new(false),
+        layers_manually_shown: Cell::new(false),
         layer_drag: RefCell::new(None),
         layer_rename: Cell::new(None),
         layer_drag_serial: Cell::new(0),
@@ -1107,6 +1216,11 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         project_save_button,
         export_path: RefCell::new(None),
         project_path: RefCell::new(None),
+        autosave_target: RefCell::new(None),
+        autosave_source: RefCell::new(None),
+        automatic_project: Cell::new(false),
+        autosave_existing: Cell::new(false),
+        recovery_content: Cell::new(None),
         project_as,
         recent,
         new_capture: new.clone(),
@@ -1327,6 +1441,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         let e = editor.clone();
         radio.connect_toggled(move |r| {
             if r.is_active() {
+                let keyboard_focus = r.is_focus();
                 e.commit_pending_edits();
                 let mut s = e.state.borrow_mut();
                 let refit = (s.tool == Tool::Select) != (Tool::ALL[i].0 == Tool::Select);
@@ -1346,7 +1461,11 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
                     e.zoom(None);
                 }
                 e.refresh();
-                e.area.grab_focus();
+                if keyboard_focus {
+                    r.grab_focus();
+                } else {
+                    e.area.grab_focus();
+                }
             }
         });
     }
@@ -1402,7 +1521,14 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         e.area.queue_draw();
     });
     let e = editor.clone();
-    new.connect_clicked(move |_| e.show_setup());
+    new.connect_clicked(move |_| e.new_screenshot());
+    let e = editor.clone();
+    capture_options.connect_clicked(move |_| {
+        e.file_menu.set_active(false);
+        e.show_setup();
+        e.setup.options.set_expanded(true);
+        e.setup.delay.grab_focus();
+    });
     let e = editor.clone();
     open.connect_clicked(move |_| e.open());
     let e = editor.clone();
@@ -1607,13 +1733,40 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         };
         e.align_layers(a);
     });
-    let e = editor.clone();
-    editor.show_tools.connect_toggled(move |_| {
-        e.refresh();
+    let weak = editor.weak_self.clone();
+    shortcuts.connect_clicked(move |_| {
+        if let Some(e) = weak.upgrade() {
+            e.file_menu.set_active(false);
+            e.show_shortcuts();
+        }
+    });
+    let weak = editor.weak_self.clone();
+    editor.close_to_tray.connect_toggled(move |toggle| {
+        if let Some(e) = weak.upgrade() {
+            e.preferences.borrow_mut().close_to_tray = toggle.is_active();
+            e.update_close_notice();
+        }
+    });
+    let weak = editor.weak_self.clone();
+    editor.close_notice.connect_response(move |bar, _| {
+        bar.hide();
+        if let Some(e) = weak.upgrade() {
+            e.preferences.borrow_mut().close_behavior_explained = true;
+        }
     });
     let e = editor.clone();
-    editor.show_layers.connect_toggled(move |_| {
-        e.refresh();
+    editor.show_tools.connect_toggled(move |_| {
+        if !e.syncing.get() {
+            e.refresh();
+        }
+    });
+    let e = editor.clone();
+    editor.show_layers.connect_toggled(move |button| {
+        if !e.syncing.get() {
+            e.auto_layers_hidden.set(false);
+            e.layers_manually_shown.set(button.is_active());
+            e.refresh();
+        }
     });
     let weak = editor.weak_self.clone();
     editor
@@ -1651,10 +1804,15 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         .connect_key_press_event(move |_, event| e.key(event));
     let e = editor.clone();
     editor.window.connect_delete_event(move |_, _| {
-        if e.resident.get() {
+        if e.resident.get() && e.close_to_tray.is_active() {
             e.hide_to_tray();
             glib::Propagation::Stop
         } else if e.close() {
+            if e.resident.get() {
+                if let Some(app) = e.window.application() {
+                    app.quit();
+                }
+            }
             glib::Propagation::Proceed
         } else {
             glib::Propagation::Stop
@@ -1688,6 +1846,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         s.pan_drag = None;
         glib::Propagation::Proceed
     });
+    icons::name_controls(editor.window.upcast_ref());
     editor.window.show_all();
     editor.show_setup();
     if editor.args.borrow().demo {
@@ -1699,17 +1858,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
             Err(err) => editor.error(err),
         }
     } else if let Some(path) = &editor.args.borrow().open {
-        match open_document(path) {
-            Ok((doc, project)) => {
-                editor.set_document(doc, crate::i18n::tr("Datei geöffnet"));
-                if project {
-                    editor.project_path.replace(Some(path.clone()));
-                    editor.mark_project_saved();
-                    editor.refresh();
-                }
-            }
-            Err(err) => editor.error(err),
-        }
+        editor.open_path(path);
     }
     editor
 }
@@ -1717,6 +1866,8 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
 impl Editor {
     pub(crate) fn set_resident(&self, resident: bool) {
         self.resident.set(resident);
+        self.close_to_tray.set_sensitive(resident);
+        self.update_close_notice();
     }
     pub(crate) fn is_closed(&self) -> bool {
         self.closed.get()
@@ -1770,11 +1921,13 @@ impl Editor {
         if self.session.borrow().is_none() && self.state.borrow().dirty {
             self.present();
             self.error(crate::i18n::anyhow!(
-                "Autosicherung nicht verfügbar. Bitte zuerst ein Projekt speichern."
+                "Autosicherung nicht verfügbar. Bitte zuerst ein bearbeitbares Projekt speichern."
             ));
             return false;
         }
         self.poll_recovery();
+        self.dismiss_error();
+        self.dismiss_shortcuts();
         self.window.hide();
         true
     }
@@ -1786,23 +1939,8 @@ impl Editor {
         self.setup.set_backend(args.backend);
         if let Some(path) = &args.open {
             self.present();
-            self.finish_text(true);
-            if !self.can_discard() {
+            if !self.open_path(path) {
                 return false;
-            }
-            match open_document(path) {
-                Ok((doc, project)) => {
-                    self.set_document(doc, crate::i18n::tr("Datei geöffnet"));
-                    if project {
-                        self.project_path.replace(Some(path.clone()));
-                        self.mark_project_saved();
-                        self.refresh();
-                    }
-                }
-                Err(err) => {
-                    self.error(err);
-                    return false;
-                }
             }
         } else if let Some(mode) = args.capture {
             self.show_setup();
@@ -1813,7 +1951,7 @@ impl Editor {
                     .source
                     .set_active_id(Some(&(index - 1).to_string()))
                 {
-                    let note = crate::i18n::format!("Bildschirm {index} ist nicht direkt auswählbar. Bitte Quelle prüfen oder Systemauswahl verwenden.");
+                    let note = crate::i18n::format!("Bildschirm {index} ist nicht direkt auswählbar. Bitte Quelle prüfen oder Fenster / Bildschirm … verwenden.");
                     self.setup.progress.set_text(&note);
                     self.status.set_text(&note);
                     self.present();
@@ -1850,6 +1988,8 @@ impl Editor {
         self.apply_preferences(&prefs);
     }
     fn apply_preferences(&self, prefs: &Preferences) {
+        self.close_to_tray.set_active(prefs.close_to_tray);
+        self.update_close_notice();
         self.restore_layer_width(prefs.layer_panel_width);
         self.recent.toggle.set_active(prefs.history_visible);
         {
@@ -1870,7 +2010,11 @@ impl Editor {
         self.snapping.set_active(prefs.snapping);
         self.syncing.set(false);
         self.show_tools.set_active(prefs.tools_visible);
+        self.syncing.set(true);
+        self.auto_layers_hidden.set(false);
+        self.layers_manually_shown.set(false);
         self.show_layers.set_active(prefs.layers_visible);
+        self.syncing.set(false);
         if self.args.borrow().monitor.is_none() {
             if let Some(index) = prefs.monitor_index(&self.setup.map.monitors()) {
                 self.setup.source.set_active_id(Some(&index.to_string()));
@@ -1928,7 +2072,8 @@ impl Editor {
         prefs.font_size = s.font_size;
         prefs.history_visible = self.recent.toggle.is_active();
         prefs.tools_visible = self.show_tools.is_active();
-        prefs.layers_visible = self.show_layers.is_active();
+        prefs.layers_visible = self.show_layers.is_active() || self.auto_layers_hidden.get();
+        prefs.close_to_tray = self.close_to_tray.is_active();
         prefs.monitor = self
             .setup
             .source
@@ -1965,6 +2110,31 @@ impl Editor {
     fn mark_exported(&self, path: &std::path::Path) {
         self.property_edit.set(None);
         *self.export_path.borrow_mut() = Some(path.to_path_buf());
+        if self.session.borrow().is_some()
+            && (self.automatic_project.get() || self.project_path.borrow().is_none())
+        {
+            if let Some(session) = self.session.borrow().as_ref() {
+                let _ = session.flush();
+            }
+            self.poll_recovery();
+            let source = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+            let sidecar = autosave::sidecar_path(&source);
+            let owned = self.project_path.borrow().as_ref() == Some(&sidecar);
+            self.autosave_existing
+                .set(owned || autosave::matches_image(&source));
+            self.autosave_target.borrow_mut().take();
+            self.project_path.replace(
+                if owned || !sidecar.exists() || autosave::matches_image(&source) {
+                    Some(sidecar)
+                } else {
+                    None
+                },
+            );
+            self.autosave_source.replace(Some(source));
+            self.automatic_project.set(true);
+            self.recovery_revision.set(None);
+            self.state.borrow_mut().project_state = None;
+        }
         self.recent.refresh();
         let mut s = self.state.borrow_mut();
         s.export_state = s.document.as_ref().map(Document::content_id);
@@ -2058,11 +2228,66 @@ impl Editor {
             self.text(Point::default());
         }
     }
+    fn prepare_autosave(&self) -> Result<()> {
+        if self.autosave_target.borrow().is_some() {
+            return Ok(());
+        }
+        let previous = self.project_path.borrow().clone();
+        if previous.is_none() && !self.state.borrow().dirty {
+            return Ok(());
+        }
+        let source = self.autosave_source.borrow().clone();
+        let path = if let Some(path) = previous.as_ref() {
+            path.clone()
+        } else if let Some(path) = source
+            .as_ref()
+            .filter(|p| !autosave::sidecar_path(p).exists() || autosave::matches_image(p))
+        {
+            autosave::sidecar_path(path)
+        } else {
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos();
+            self.export_directory()?.join(format!(
+                "{}-{stamp}.untushot",
+                suggested_filename("untushot").trim_end_matches(".untushot")
+            ))
+        };
+        let target = autosave::Target::open(
+            path.clone(),
+            source,
+            (previous.is_some() && self.autosave_existing.get())
+                || self
+                    .autosave_source
+                    .borrow()
+                    .as_ref()
+                    .is_some_and(|p| autosave::matches_image(p)),
+        )?;
+        self.autosave_target.replace(Some(target));
+        self.project_path.replace(Some(path));
+        if previous.is_none() {
+            self.automatic_project.set(true);
+        }
+        Ok(())
+    }
+
+    fn flush_autosave(&self) -> Result<()> {
+        self.poll_recovery();
+        self.save_recovery()?;
+        let result = self.session.borrow().as_ref().map_or(Ok(()), |s| s.flush());
+        self.poll_recovery();
+        result
+    }
+
     fn save_recovery(&self) -> Result<()> {
         let session = self.session.borrow();
         let Some(session) = session.as_ref() else {
             return Ok(());
         };
+        let target = self
+            .prepare_autosave()
+            .map(|_| self.autosave_target.borrow().clone())
+            .map_err(|error| format!("{error:#}"));
         let s = self.state.borrow();
         let Some(doc) = &s.document else {
             return Ok(());
@@ -2070,7 +2295,15 @@ impl Editor {
         if self.recovery_revision.get() == Some(doc.revision()) {
             return Ok(());
         }
-        let ticket = session.save(doc, self.recovery_revision.get().is_none())?;
+        self.recovery_content.set(
+            target
+                .as_ref()
+                .ok()
+                .and_then(|t| t.as_ref())
+                .map(|_| doc.content_id()),
+        );
+        let ticket =
+            session.save_with_sidecar(doc, self.recovery_revision.get().is_none(), target)?;
         self.recovery_revision.set(Some(doc.revision()));
         self.recovery_ticket.set(Some(ticket));
         drop(s);
@@ -2086,6 +2319,14 @@ impl Editor {
                 match completion.result {
                     Ok(()) => {
                         self.recovery_ack.set(Some(completion.ticket));
+                        if let Some(content) = self.recovery_content.get() {
+                            let mut s = self.state.borrow_mut();
+                            s.project_state = Some(content);
+                            s.dirty = s
+                                .document
+                                .as_ref()
+                                .is_some_and(|d| d.content_id() != content);
+                        }
                         *self.recovery_error.borrow_mut() = None;
                     }
                     Err(e) => {
@@ -2185,11 +2426,14 @@ impl Editor {
         let show_project =
             self.stack.visible_child_name().as_deref() == Some("editor") && !s.selecting_region;
         self.storage_button.set_visible(show_project);
-        self.project_save_button.set_visible(show_project);
+        self.project_save_button
+            .set_visible(show_project && self.session.borrow().is_none());
         let project_status = if self.inline_edit.borrow().is_some() {
             crate::i18n::tr("Projekt: Text in Bearbeitung")
         } else if self.layer_rename.get().is_some() {
             crate::i18n::tr("Projekt: Name in Bearbeitung")
+        } else if self.session.borrow().is_some() {
+            session
         } else {
             match s.project_state {
                 Some(r) if r == content_id => crate::i18n::tr("Projekt: gespeichert"),
@@ -2251,6 +2495,7 @@ impl Editor {
         }
         self.poll_recovery();
         self.session.borrow_mut().take();
+        self.autosave_target.borrow_mut().take();
         {
             let mut s = self.state.borrow_mut();
             s.generation += 1;
@@ -2261,6 +2506,8 @@ impl Editor {
         }
         self.recent.stop();
         self.closed.set(true);
+        self.dismiss_error();
+        self.dismiss_shortcuts();
         true
     }
     fn duplicate_layers(&self) {
@@ -2335,6 +2582,7 @@ impl Editor {
     }
 
     fn refresh(&self) {
+        self.update_close_notice();
         self.recent.attach_to(
             if self.stack.visible_child_name().as_deref() == Some("editor") {
                 &self.history_canvas
@@ -2426,6 +2674,16 @@ impl Editor {
         self.sidebar.set_visible(!s.selecting_region);
         self.left_panel
             .set_visible(!s.selecting_region && self.show_tools.is_active());
+        let has_layers = s
+            .document
+            .as_ref()
+            .is_some_and(|d| !d.annotations().is_empty());
+        if !has_layers && !self.layers_manually_shown.get() && self.show_layers.is_active() {
+            self.auto_layers_hidden.set(true);
+            self.show_layers.set_active(false);
+        } else if has_layers && self.auto_layers_hidden.replace(false) {
+            self.show_layers.set_active(true);
+        }
         self.right_panel
             .set_visible(!s.selecting_region && self.show_layers.is_active());
         self.inspector.set_visible(!s.selecting_region);
@@ -2477,6 +2735,7 @@ impl Editor {
         let count = s.indices().len();
         self.empty_layers.set_visible(layer_count == 0);
         self.layer_actions.set_visible(count > 0);
+        self.property_scroll.set_visible(count > 0);
         self.selection_label.set_visible(count > 0);
         self.visible.set_visible(count > 0);
         self.duplicate.set_visible(count > 0);
@@ -2812,6 +3071,7 @@ impl Editor {
     }
 
     fn set_document(&self, doc: Document, note: &str) {
+        self.dismiss_error();
         self.finish_layer_rename(false);
         layer_drag::cancel(self);
         if let Some(menu) = self.object_menu.borrow_mut().take() {
@@ -2822,6 +3082,11 @@ impl Editor {
             .set(self.clipboard_epoch.get().wrapping_add(1));
         self.export_path.borrow_mut().take();
         self.project_path.borrow_mut().take();
+        self.autosave_target.borrow_mut().take();
+        self.autosave_source.borrow_mut().take();
+        self.automatic_project.set(false);
+        self.autosave_existing.set(false);
+        self.recovery_content.set(None);
         self.preview.borrow_mut().clear();
         self.finish_text(false);
         self.layer_previews.borrow_mut().clear();
@@ -2860,10 +3125,6 @@ impl Editor {
         self.status.set_tooltip_text(Some(note));
         self.area.grab_focus();
         self.refresh();
-        if let Err(error) = self.save_recovery() {
-            self.status
-                .set_text(&crate::i18n::format!("Autosicherung: {error:#}"));
-        }
     }
 
     fn show_setup(&self) {
@@ -2877,9 +3138,7 @@ impl Editor {
         drop(s);
         self.stack.set_visible_child_name("setup");
         self.setup.refresh_layout();
-        self.setup.progress.set_text(crate::i18n::tr(
-            "Danach kannst du jederzeit zuschneiden und Objekte bearbeiten.",
-        ));
+        self.setup.progress.set_text("");
         self.refresh();
     }
 
@@ -2928,6 +3187,17 @@ impl Editor {
 
     fn can_discard(&self) -> bool {
         self.commit_pending_edits();
+        if self.session.borrow().is_some() {
+            return match self.flush_autosave() {
+                Ok(()) => true,
+                Err(error) => {
+                    self.error(error.context(crate::i18n::tr(
+                        "Änderungen konnten nicht automatisch gespeichert werden",
+                    )));
+                    false
+                }
+            };
+        }
         if !self.state.borrow().dirty {
             return true;
         }
@@ -2953,6 +3223,12 @@ impl Editor {
         } else {
             crate::i18n::tr("Als PNG speicherst du das fertige Bild zum Teilen. Ein Projekt erhält zusätzlich das ursprüngliche Bild und die einzeln bearbeitbaren Markierungen.")
         }));
+        let retention = gtk::Label::new(Some(crate::i18n::tr("Bearbeitbare Projekte enthalten das Originalbild – auch verdeckte oder geschwärzte Inhalte. Zum Teilen ein Bild exportieren.")));
+        retention.set_line_wrap(true);
+        retention.set_max_width_chars(65);
+        retention.set_xalign(0.);
+        retention.show();
+        dialog.content_area().add(&retention);
         dialog.add_buttons(&[
             (crate::i18n::tr("Zurück"), gtk::ResponseType::Cancel),
             (
@@ -2964,7 +3240,7 @@ impl Editor {
                 gtk::ResponseType::Accept,
             ),
             (
-                crate::i18n::tr("Projekt speichern"),
+                crate::i18n::tr("Bearbeitbares Projekt speichern"),
                 gtk::ResponseType::Other(2),
             ),
         ]);
@@ -3330,32 +3606,52 @@ impl Editor {
         if self.is_capturing() {
             return false;
         }
-        let opened = match open_document(path) {
+        if self.session.borrow().is_some() && !self.can_discard() {
+            return false;
+        }
+        let image = match std::fs::canonicalize(path) {
+            Ok(path) => path,
+            Err(error) => {
+                self.error(error.into());
+                return false;
+            }
+        };
+        let actual = if autosave::matches_image(&image) {
+            autosave::sidecar_path(&image)
+        } else {
+            image.clone()
+        };
+        let (doc, project) = match open_document(&actual) {
             Ok(opened) => opened,
             Err(error) => {
                 self.error(error);
                 return false;
             }
         };
-        if !self.can_discard() {
+        if self.session.borrow().is_none() && !self.can_discard() {
             return false;
         }
-        let (doc, project) = opened;
         self.set_document(
             doc,
             if project {
-                crate::i18n::tr(
-                    "Projekt geöffnet · Strg+Alt+S speichert Änderungen in dieser Datei",
-                )
+                crate::i18n::tr("Projekt geöffnet · Änderungen werden automatisch gespeichert")
             } else {
                 crate::i18n::tr("Bild geöffnet · Das Original bleibt unverändert")
             },
         );
         if project {
-            self.project_path.replace(Some(path.to_path_buf()));
+            self.project_path.replace(Some(actual.clone()));
+            self.autosave_existing.set(true);
             self.mark_project_saved();
-            self.refresh();
         }
+        if !project || actual != image {
+            self.autosave_source.replace(Some(image.clone()));
+        } else if project && autosave::matches_image(&actual.with_extension("")) {
+            self.autosave_source
+                .replace(Some(actual.with_extension("")));
+        }
+        self.automatic_project.set(actual != image);
+        self.refresh();
         true
     }
     fn export_directory(&self) -> Result<PathBuf> {
@@ -3438,16 +3734,38 @@ impl Editor {
 
     fn save_project_to(&self, path: &std::path::Path) -> bool {
         self.commit_pending_edits();
+        // Drain background writes before an explicit save; Save As can also
+        // rescue a document whose automatic destination is unavailable.
+        if let Some(session) = self.session.borrow().as_ref() {
+            let _ = session.flush();
+        }
+        self.poll_recovery();
+        let source = self
+            .autosave_source
+            .borrow()
+            .clone()
+            .filter(|_| self.project_path.borrow().as_deref() == Some(path));
         let result = (|| -> Result<()> {
             let s = self.state.borrow();
             let doc = s
                 .document
                 .as_ref()
                 .ok_or_else(|| crate::i18n::anyhow!("Kein Bild geöffnet"))?;
-            atomic_write(path, |file| doc.write_project(file))
+            let stamp = source
+                .as_deref()
+                .map(autosave::SourceStamp::read)
+                .transpose()?;
+            atomic_write(path, |file| {
+                doc.write_project_with_source(file, stamp.as_ref())
+            })
         })();
         match result {
             Ok(()) => {
+                self.autosave_target.borrow_mut().take();
+                self.autosave_source.replace(source);
+                self.automatic_project.set(false);
+                self.autosave_existing.set(true);
+                self.recovery_revision.set(None);
                 self.project_path.replace(Some(path.to_path_buf()));
                 self.mark_project_saved();
                 self.status.set_text(&crate::i18n::format!(
@@ -3476,11 +3794,17 @@ impl Editor {
             &[
                 (crate::i18n::tr("Abbrechen"), gtk::ResponseType::Cancel),
                 (
-                    crate::i18n::tr("Projekt speichern"),
+                    crate::i18n::tr("Bearbeitbares Projekt speichern"),
                     gtk::ResponseType::Accept,
                 ),
             ],
         );
+        let warning = gtk::Label::new(Some(crate::i18n::tr("Bearbeitbare Projekte enthalten das Originalbild – auch verdeckte oder geschwärzte Inhalte. Zum Teilen ein Bild exportieren.")));
+        warning.set_line_wrap(true);
+        warning.set_max_width_chars(65);
+        warning.set_xalign(0.);
+        warning.show();
+        dialog.set_extra_widget(&warning);
         let previous = self.project_path.borrow().clone();
         let directory = previous
             .as_ref()
@@ -3517,21 +3841,19 @@ impl Editor {
         response == gtk::ResponseType::Accept && path.is_some_and(|p| self.save_project_to(&p))
     }
 
-    fn error(&self, error: anyhow::Error) {
-        let text = crate::i18n::format!("{error:#}");
-        self.status.set_text(&text);
-        self.status.set_tooltip_text(Some(&text));
-        let dialog = gtk::MessageDialog::new(
-            Some(&self.window),
-            gtk::DialogFlags::MODAL,
-            gtk::MessageType::Error,
-            gtk::ButtonsType::Close,
-            &text,
-        );
-        dialog.set_title("UntuShot");
-        dialog.run();
-        dialog.hide();
-        dialog.close();
+    fn new_screenshot(self: &Rc<Self>) {
+        if self.is_capturing() {
+            return;
+        }
+        if self.setup.uses_desktop_chooser() {
+            self.setup.refresh_layout();
+            self.setup.system.set_active(true);
+            self.setup.source.set_active_id(Some("all"));
+            self.setup.delay.set_value(0.);
+            self.capture_with_visibility(true);
+        } else {
+            self.show_setup();
+        }
     }
 
     fn capture(self: &Rc<Self>) {
@@ -3541,6 +3863,7 @@ impl Editor {
         if self.state.borrow().capturing {
             return;
         }
+        self.dismiss_error();
         let expected_layout = Layout::new(self.setup.map.monitors());
         let current_layout = capture::desktop_layout();
         if expected_layout != current_layout {
@@ -3551,6 +3874,7 @@ impl Editor {
         if !self.can_discard() {
             return;
         }
+        self.dismiss_shortcuts();
         let mode = self.setup.mode();
         let source = self
             .setup
@@ -3588,6 +3912,9 @@ impl Editor {
                     return;
                 }
             }
+            // Help can be opened during the countdown. It must not appear in
+            // the screenshot when the countdown finishes.
+            e.dismiss_shortcuts();
             e.window.hide();
             glib::timeout_future(Duration::from_millis(350)).await;
             if e.state.borrow().generation != generation || e.closed.get() {
@@ -3602,31 +3929,63 @@ impl Editor {
             if e.state.borrow().generation != generation || e.closed.get() {
                 return;
             }
-            e.capture_cancel.borrow_mut().take();
-            e.state.borrow_mut().capturing = false;
-            match result {
-                Ok(capture) => match Document::new(capture.image, capture.monitors) {
-                    Ok(doc) => e.accept_capture(doc, &capture.note, mode, source),
-                    Err(err) => {
-                        e.window.show();
-                        e.window.present();
-                        e.error(err);
-                        e.refresh();
-                        return;
-                    }
-                },
-                Err(err) => {
-                    e.show_setup();
-                    e.window.show();
-                    e.window.present();
-                    e.error(err);
-                }
-            }
-            // Map the window only after the selection state and toolbars are ready.
-            e.refresh();
-            e.window.show();
-            e.window.present();
+            e.finish_capture(result, mode, source);
         });
+    }
+
+    fn finish_capture(&self, result: Result<capture::Capture>, mode: Mode, source: Option<usize>) {
+        self.capture_cancel.borrow_mut().take();
+        self.state.borrow_mut().capturing = false;
+        let result = result.and_then(|capture| {
+            let doc = Document::new(capture.image, capture.monitors)?;
+            if capture.desktop_confirmed {
+                // The desktop already completed selection. In particular, an
+                // Auto -> portal fallback must not apply the old monitor index
+                // or force a second region selection to unlock the editor.
+                self.set_document(doc, &capture.note);
+            } else {
+                self.accept_capture(doc, &capture.note, mode, source);
+            }
+            Ok(())
+        });
+        let portal_failure = result
+            .as_ref()
+            .err()
+            .and_then(|error| error.downcast_ref::<capture::PortalFailure>())
+            .copied();
+        let quiet_end = matches!(
+            portal_failure,
+            Some(capture::PortalFailure::Cancelled | capture::PortalFailure::NoImage)
+        );
+        if result.is_err() {
+            if quiet_end && self.state.borrow().document.is_some() {
+                self.stack.set_visible_child_name("editor");
+            } else {
+                self.show_setup();
+            }
+        }
+        // Restore the editor before presenting an error, so it cannot cover
+        // the popup. No dialog may keep the capture task alive.
+        self.refresh();
+        self.window.show();
+        self.window.present();
+        if let Err(error) = result {
+            if quiet_end {
+                let note = if portal_failure == Some(capture::PortalFailure::NoImage) {
+                    crate::i18n::eprintln!("UntuShot: {error:#}");
+                    crate::i18n::tr("Keine Aufnahme übernommen.")
+                } else if self.state.borrow().document.is_some() {
+                    crate::i18n::tr("Aufnahme abgebrochen")
+                } else {
+                    crate::i18n::tr("Aufnahme abgebrochen. Du kannst erneut aufnehmen oder zum Editor zurückkehren.")
+                };
+                self.setup.progress.set_text(note);
+                self.status.set_text(note);
+                self.status.set_tooltip_text(None);
+            } else {
+                self.capture_error(error);
+            }
+        }
     }
 
     fn accept_capture(&self, mut doc: Document, note: &str, mode: Mode, source: Option<usize>) {
@@ -3855,7 +4214,7 @@ impl Editor {
             return false;
         }
         let dialog = gtk::FileChooserDialog::with_buttons(
-            Some(crate::i18n::tr("Screenshot als PNG speichern")),
+            Some(crate::i18n::tr("Bild als PNG exportieren")),
             Some(&self.window),
             gtk::FileChooserAction::Save,
             &[
@@ -3918,7 +4277,7 @@ impl Editor {
                     Ok(()) => {
                         self.mark_exported(&path);
                         self.status.set_text(&crate::i18n::format!(
-                            "PNG exportiert: {} · Ebenen bleiben nur im Projekt bearbeitbar",
+                            "PNG exportiert: {} · Bearbeitung wird automatisch gespeichert",
                             path.display()
                         ));
                         self.refresh();
@@ -4179,7 +4538,7 @@ impl Editor {
                 self.set_document(
                     document,
                     crate::i18n::tr(
-                        "Bild übernommen · Markierungen hinzufügen oder als PNG speichern",
+                        "Bild übernommen · Markierungen hinzufügen oder als Bild exportieren",
                     ),
                 );
                 true
@@ -4323,6 +4682,25 @@ impl Editor {
         modifiers: gdk::ModifierType,
     ) -> glib::Propagation {
         use gdk::keys::constants as key;
+        if matches!(k, key::Tab | key::ISO_Left_Tab) {
+            return glib::Propagation::Proceed;
+        }
+        if k == key::F1 {
+            self.show_shortcuts();
+            return glib::Propagation::Stop;
+        }
+        if k == key::F6 {
+            if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                let show = !(self.show_tools.is_active() || self.show_layers.is_active());
+                self.auto_layers_hidden.set(false);
+                self.layers_manually_shown.set(show);
+                self.show_tools.set_active(show);
+                self.show_layers.set_active(show);
+            } else {
+                self.area.grab_focus();
+            }
+            return glib::Propagation::Stop;
+        }
         if k == key::Escape && self.layer_rename.get().is_some() {
             self.finish_layer_rename(false);
             self.area.grab_focus();
@@ -4365,6 +4743,12 @@ impl Editor {
         // inline text editor owns the focus. Text editing shortcuts stay local.
         if ctrl {
             match k {
+                key::n | key::N => {
+                    if !self.state.borrow().selecting_region {
+                        self.new_screenshot();
+                    }
+                    return glib::Propagation::Stop;
+                }
                 key::v | key::V if shift => {
                     self.import_image(false);
                     return glib::Propagation::Stop;
@@ -4478,6 +4862,18 @@ impl Editor {
             }
             return glib::Propagation::Stop;
         }
+        let native_control_focused = self.window.focused_widget().is_some_and(|w| {
+            !w.is::<gtk::DrawingArea>()
+                && !w.is::<gtk::TextView>()
+                && !w.is::<gtk::Entry>()
+                && !w.is::<gtk::SpinButton>()
+        });
+        if native_control_focused
+            && !ctrl
+            && !matches!(k, key::Escape | key::F2 | key::Delete | key::F8 | key::F9)
+        {
+            return glib::Propagation::Proceed;
+        }
         if self
             .stack
             .visible_child_name()
@@ -4534,12 +4930,6 @@ impl Editor {
                 self.show_layers.set_active(!self.show_layers.is_active());
                 return glib::Propagation::Stop;
             }
-            key::Tab => {
-                let show = !(self.show_tools.is_active() || self.show_layers.is_active());
-                self.show_tools.set_active(show);
-                self.show_layers.set_active(show);
-                return glib::Propagation::Stop;
-            }
             key::Left | key::Right | key::Up | key::Down => {
                 let step = if shift { 10. } else { 1. };
                 let (dx, dy) = match k {
@@ -4574,7 +4964,6 @@ impl Editor {
                         self.monitors.set_active_id(Some("all"));
                     }
                 }
-                key::n | key::N => self.show_setup(),
                 _ => return glib::Propagation::Proceed,
             }
         } else {
@@ -5325,6 +5714,121 @@ mod tests {
 
     #[test]
     #[ignore = "requires a private GTK display"]
+    fn gtk_capture_error_workflow() {
+        gtk::init().expect("GTK needs a display");
+        let app = gtk::Application::new(
+            Some("io.github.untushot.CaptureErrorTest"),
+            gio::ApplicationFlags::NON_UNIQUE,
+        );
+        app.register(gio::Cancellable::NONE).unwrap();
+        let editor = build(&app, Args::parse_from(["untushot", "--demo"]));
+        let content = editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .content_id();
+        editor.state.borrow_mut().capturing = true;
+        editor
+            .capture_cancel
+            .replace(Some(capture::Cancellation::default()));
+        editor.window.hide();
+        let completed = Rc::new(Cell::new(false));
+        let timed_out = Rc::new(Cell::new(false));
+        let timeout = timed_out.clone();
+        // Rescue the old blocking implementation so a regression fails instead
+        // of leaving the test runner stuck in Dialog::run().
+        let watchdog = glib::timeout_add_local_once(Duration::from_secs(2), move || {
+            timeout.set(true);
+            for window in gtk::Window::list_toplevels() {
+                if let Ok(dialog) = window.downcast::<gtk::MessageDialog>() {
+                    dialog.response(gtk::ResponseType::Close);
+                }
+            }
+        });
+        let e = editor.clone();
+        let done = completed.clone();
+        glib::MainContext::default().spawn_local(async move {
+            glib::timeout_future(Duration::from_millis(10)).await;
+            e.finish_capture(
+                Err(crate::i18n::anyhow!(
+                    "Desktop-Portal hat die Aufnahme abgelehnt"
+                )),
+                Mode::Full,
+                None,
+            );
+            done.set(true);
+        });
+        while !completed.get() && !timed_out.get() {
+            glib::MainContext::default().iteration(true);
+        }
+        assert!(!timed_out.get(), "capture task blocked on the error popup");
+        watchdog.remove();
+        assert!(!editor.is_capturing());
+        assert!(editor.capture_cancel.borrow().is_none());
+        assert!(editor.window.is_visible());
+        assert!(editor.setup.start.is_sensitive());
+        assert_eq!(editor.stack.visible_child_name().as_deref(), Some("setup"));
+        assert_eq!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .content_id(),
+            content
+        );
+
+        let popup = || {
+            gtk::Window::list_toplevels()
+                .into_iter()
+                .filter_map(|w| w.downcast::<gtk::MessageDialog>().ok())
+                .find(|d| {
+                    d.is_visible() && d.transient_for().as_ref() == Some(editor.window.upcast_ref())
+                })
+                .expect("visible error popup")
+        };
+        let dialog = popup();
+        assert!(!dialog.is_modal());
+        dialog
+            .widget_for_response(gtk::ResponseType::Close)
+            .unwrap()
+            .downcast::<gtk::Button>()
+            .unwrap()
+            .emit_clicked();
+        assert!(!dialog.is_visible());
+        for escape in [true, false] {
+            editor.error(crate::i18n::anyhow!(
+                "Desktop-Portal hat die Aufnahme abgelehnt"
+            ));
+            let dialog = popup();
+            if escape {
+                // GtkDialog's Escape binding emits the close action.
+                dialog.emit_by_name::<()>("close", &[]);
+            } else {
+                dialog.close();
+            }
+            while glib::MainContext::default().pending() {
+                glib::MainContext::default().iteration(false);
+            }
+            assert!(!dialog.is_visible());
+        }
+        editor.error(crate::i18n::anyhow!(
+            "Desktop-Portal hat die Aufnahme abgelehnt"
+        ));
+        let dialog = popup();
+        crate::runtime::assert_quit_with_error(&app, &editor);
+        editor.window.close();
+        while glib::MainContext::default().pending() {
+            glib::MainContext::default().iteration(false);
+        }
+        assert!(!dialog.is_visible());
+    }
+
+    #[test]
+    #[ignore = "requires a private GTK display"]
     fn gtk_many_layers() {
         gtk::init().expect("GTK needs a display");
         let app = gtk::Application::new(
@@ -5736,15 +6240,22 @@ mod tests {
                 "a visible selected layer must remain visible when resizing the window"
             );
             assert!(history_editor.shadow_offset.is_mapped());
+            let viewport = history_editor
+                .property_scroll
+                .child()
+                .unwrap()
+                .downcast::<gtk::Viewport>()
+                .unwrap();
+            let content = viewport.child().unwrap();
             let bottom = history_editor
                 .shadow_offset
-                .translate_coordinates(&history_editor.inspector, 0, 0)
+                .translate_coordinates(&content, 0, 0)
                 .unwrap()
                 .1
                 + history_editor.shadow_offset.allocated_height();
             assert!(
-                bottom <= history_editor.inspector.allocated_height(),
-                "all effect controls stay inside the inspector"
+                f64::from(bottom) <= history_editor.property_scroll.vadjustment().upper(),
+                "all effect controls remain reachable by scrolling"
             );
         });
         history_editor.show_setup();
@@ -5802,6 +6313,8 @@ mod tests {
         assert!(editor.area.allocated_width() > 360);
         assert!(editor.export_button.is_mapped() && editor.project_save_button.is_mapped());
         snapshot("gtk-editor-simplified-compact");
+        editor.show_layers.set_active(true);
+        settle();
         let initial_panel_width = editor.right_panel.allocated_width();
         let initial_position = editor.workspace_split.position();
         editor.workspace_split.set_position(initial_position - 100);
@@ -5835,6 +6348,7 @@ mod tests {
         editor.restore_layer_width(initial_panel_width);
         settle();
         editor.load_preferences(&panel_path);
+        editor.show_layers.set_active(true);
         settle();
         assert!(
             (editor.right_panel.allocated_width() - wide_panel).abs() <= 2,
@@ -5843,6 +6357,7 @@ mod tests {
         snapshot("gtk-resizable-layers");
         let reopened = build(&app, Args::parse_from(["untushot", "--demo"]));
         reopened.load_preferences(&panel_path);
+        reopened.show_layers.set_active(true);
         settle();
         assert!(
             (reopened.right_panel.allocated_width() - wide_panel).abs() <= 2,
@@ -6376,7 +6891,10 @@ mod tests {
         settle();
         assert_eq!(editor.stack.visible_child_name().as_deref(), Some("setup"));
         assert!(!editor.save.is_sensitive());
-        assert!(editor.setup.source.allocated_width() >= 560);
+        assert!(!editor.setup.options.is_expanded());
+        editor.setup.options.set_expanded(true);
+        settle();
+        assert!(editor.setup.source.allocated_width() >= 440);
         let setup_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             editor.window.allocated_width(),
@@ -6514,6 +7032,7 @@ mod tests {
         editor.show_setup();
         editor.state.borrow_mut().dirty = false;
         editor.setup.delay.set_value(2.);
+        editor.setup.options.set_expanded(true);
         editor.setup.delay.grab_focus();
         editor.key_input(gdk::keys::constants::Return, gdk::ModifierType::empty());
         settle();
@@ -6918,17 +7437,17 @@ mod tests {
         editor.session.borrow().as_ref().unwrap().flush().unwrap();
         editor.poll_recovery();
         assert!(editor.storage.text().contains("Automatisch gesichert"));
-        assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
+        assert_eq!(editor.storage_caption.text(), "Automatisch gesichert");
         editor
             .layers
             .select_row(editor.layers.row_at_index(0).as_ref());
         editor.nudge(1., 0., false);
         assert!(editor.storage.text().contains("Projekt geändert"));
-        assert_eq!(editor.storage_caption.text(), "Projekt: geändert");
+        assert_eq!(editor.storage_caption.text(), "Sicherung ausstehend");
         assert!(editor.storage.text().contains("PNG enthält älteren Stand"));
         editor.history(false);
         assert!(editor.storage.text().contains("Projekt gespeichert"));
-        assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
+        assert_eq!(editor.storage_caption.text(), "Sicherung ausstehend");
         assert!(editor.storage.text().contains("PNG aktuell"));
         assert!(!editor.state.borrow().dirty);
         editor.history(true);
@@ -6941,7 +7460,7 @@ mod tests {
         assert!(editor.closed.get());
         let (_session, recovered) = recovery::Session::open(session_dir.path(), true).unwrap();
         assert_eq!(recovered.unwrap().annotations()[0].text, "Überarbeitet");
-        // Closing a resident editor saves and hides; delayed quick actions are
+        // Opting into background operation saves and hides; delayed actions are
         // cancellable without allowing a real desktop capture in this test.
         let resident = build(&app, Args::parse_from(["untushot", "--demo"]));
         settle();
@@ -6952,6 +7471,7 @@ mod tests {
                 .0,
         ));
         resident.set_resident(true);
+        resident.close_to_tray.set_active(true);
         resident.window.close();
         settle();
         assert!(!resident.window.is_visible());
@@ -7098,7 +7618,7 @@ mod tests {
         assert_eq!(start_caption(), "Bildschirm aufnehmen · 3 s");
         themed.setup.system.set_active(true);
         themed.setup.delay.set_value(0.);
-        assert_eq!(start_caption(), "Systemauswahl öffnen");
+        assert_eq!(start_caption(), "Fenster oder Bildschirm wählen");
         settings.set_property("gtk-theme-name", original_theme);
         settings.set_property("gtk-application-prefer-dark-theme", original_dark);
         themed.setup.cancel.emit_clicked();
@@ -7205,7 +7725,14 @@ mod tests {
             editor.state.borrow().document.as_ref().unwrap().width(),
             620
         );
-        assert!(editor.base.is_visible());
+        assert!(!editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .is_composition());
+        assert!(!editor.right_panel.is_visible());
         editor.history(true);
         settle();
         assert_eq!(editor.layers.children().len(), 2);
@@ -7901,15 +8428,18 @@ mod tests {
         editor.window.resize(1000, 700);
         settle();
         assert!(editor.window.allocated_width() <= 1080);
-        // All essential effects fit without scrolling at the compact window size.
+        // Keyboard navigation reveals the last effect in the independent
+        // properties scroller at the compact window size.
+        editor.shadow_offset.grab_focus();
+        settle();
         let (_, y) = editor
             .shadow_offset
-            .translate_coordinates(&editor.right_panel, 0, 0)
+            .translate_coordinates(&editor.property_scroll, 0, 0)
             .unwrap();
         assert!(
             y >= 0
                 && y + editor.shadow_offset.allocated_height()
-                    <= editor.right_panel.allocated_height()
+                    <= editor.property_scroll.allocated_height()
         );
         let original = editor
             .state
@@ -8083,14 +8613,15 @@ mod tests {
         surface
             .write_to_png(&mut std::fs::File::create("target/gtk-live-properties.png").unwrap())
             .unwrap();
-        // The layer list consumes spare height; options stay fixed and visible
-        // while a long list scrolls independently.
+        // Both panes gain space in a taller window and scroll independently.
         editor.window.resize(1000, 700);
         settle();
         let compact_height = editor.layer_scroll.allocated_height();
+        let compact_properties = editor.property_scroll.allocated_height();
         editor.window.resize(1000, 850);
         settle();
-        assert!(editor.layer_scroll.allocated_height() > compact_height + 100);
+        assert!(editor.layer_scroll.allocated_height() > compact_height);
+        assert!(editor.property_scroll.allocated_height() > compact_properties);
         editor.window.resize(1000, 700);
         {
             let mut s = editor.state.borrow_mut();
@@ -8120,14 +8651,18 @@ mod tests {
         let collapsed_height = editor.layer_scroll.allocated_height();
         geometry.set_expanded(true);
         settle();
-        assert!(editor.layer_scroll.allocated_height() < collapsed_height);
+        assert_eq!(editor.layer_scroll.allocated_height(), collapsed_height);
+        editor.area.grab_focus();
+        editor.shadow_offset.grab_focus();
+        settle();
         let (_, bottom) = editor
             .shadow_offset
-            .translate_coordinates(&editor.right_panel, 0, 0)
+            .translate_coordinates(&editor.property_scroll, 0, 0)
             .unwrap();
         assert!(
-            bottom + editor.shadow_offset.allocated_height()
-                <= editor.right_panel.allocated_height()
+            bottom >= 0
+                && bottom + editor.shadow_offset.allocated_height()
+                    <= editor.property_scroll.allocated_height()
         );
         geometry.set_expanded(false);
         settle();
@@ -9242,6 +9777,16 @@ mod tests {
 
     fn shortcuts_and_image_switch(app: &gtk::Application) {
         use gdk::keys::constants as key;
+        fn dismiss_error(editor: &Editor) {
+            let dialog = editor
+                .error_dialog
+                .borrow()
+                .clone()
+                .expect("non-blocking error popup");
+            assert!(dialog.is_visible());
+            dialog.response(gtk::ResponseType::Close);
+            assert!(editor.error_dialog.borrow().is_none());
+        }
         fn answer(title: &'static str, callback: impl Fn(&gtk::Dialog) + 'static) {
             let existing: Vec<_> = gtk::Window::list_toplevels()
                 .into_iter()
@@ -9417,7 +9962,7 @@ mod tests {
         assert!(!editor.can_discard());
         // Save As must open a chooser even with an existing PNG target; cancel
         // must preserve both the target and the current editable document.
-        answer("Screenshot als PNG speichern", |d| {
+        answer("Bild als PNG exportieren", |d| {
             d.response(gtk::ResponseType::Cancel)
         });
         shortcut(
@@ -9428,7 +9973,7 @@ mod tests {
         assert_eq!(editor.export_path.borrow().as_ref(), Some(&output));
         let fresh = temp.path().join("Fresh.png");
         let destination = fresh.clone();
-        answer("Screenshot als PNG speichern", move |dialog| {
+        answer("Bild als PNG exportieren", move |dialog| {
             let chooser = dialog.clone().downcast::<gtk::FileChooserDialog>().unwrap();
             chooser.set_current_folder(destination.parent().unwrap());
             chooser.set_current_name(destination.file_name().unwrap().to_str().unwrap());
@@ -9528,7 +10073,7 @@ mod tests {
             .unwrap()
             .content_id();
         answer("Änderungen speichern", |d| {
-            answer("Screenshot als PNG speichern", |d| {
+            answer("Bild als PNG exportieren", |d| {
                 d.response(gtk::ResponseType::Cancel)
             });
             shortcut(d.upcast_ref(), key::s, gdk::ModifierType::CONTROL_MASK);
@@ -9550,10 +10095,10 @@ mod tests {
             .export_path
             .replace(Some(temp.path().join("missing/failed.png")));
         answer("Änderungen speichern", |d| {
-            answer("UntuShot", |d| d.response(gtk::ResponseType::Close));
             d.response(gtk::ResponseType::Other(1));
         });
         assert!(!editor.open_path(&next));
+        dismiss_error(&editor);
         assert_eq!(
             editor
                 .state
@@ -9633,6 +10178,13 @@ mod tests {
         assert!(editor.state.borrow().export_state.is_none());
         let saved = std::fs::read(&project_path).unwrap();
         answer("Bearbeitbares Projekt speichern", |d| {
+            let chooser = d.clone().downcast::<gtk::FileChooserDialog>().unwrap();
+            let warning = chooser
+                .extra_widget()
+                .unwrap()
+                .downcast::<gtk::Label>()
+                .unwrap();
+            assert!(warning.is_visible() && warning.text().contains("Originalbild"));
             d.response(gtk::ResponseType::Cancel)
         });
         shortcut(
@@ -9673,8 +10225,8 @@ mod tests {
         for path in [temp.path().join("Missing.png"), damaged] {
             // An unreadable target must show only the error, not a save/discard
             // prompt for the current document before it can even be loaded.
-            answer("UntuShot", |d| d.response(gtk::ResponseType::Close));
             assert!(!editor.open_path(&path));
+            dismiss_error(&editor);
             assert_eq!(
                 editor
                     .state
@@ -9716,8 +10268,8 @@ mod tests {
         editor
             .project_path
             .replace(Some(temp.path().join("missing/project.untushot")));
-        answer("UntuShot", |d| d.response(gtk::ResponseType::Close));
         assert!(!editor.save_project());
+        dismiss_error(&editor);
         assert!(editor.state.borrow().dirty);
         assert_eq!(std::fs::read(&project_path).unwrap(), saved);
         editor.project_path.replace(Some(project_path.clone()));
@@ -9727,7 +10279,7 @@ mod tests {
             open_document(&project_path).unwrap().0.annotations().len(),
             2
         );
-        // W hides a resident window and keeps its session; Q closes that session
+        // With background operation enabled, W keeps the session; Q closes it
         // even from setup with a spin button focused.
         editor.session.replace(Some(
             recovery::Session::open(&temp.path().join("recovery"), false)
@@ -9735,6 +10287,7 @@ mod tests {
                 .0,
         ));
         editor.set_resident(true);
+        editor.close_to_tray.set_active(true);
         editor.text(Point::default());
         editor
             .inline_input
@@ -9763,7 +10316,7 @@ mod tests {
                 .text_size(),
             69.
         );
-        assert_ne!(
+        assert_eq!(
             open_document(&project_path)
                 .unwrap()
                 .0
@@ -9772,10 +10325,11 @@ mod tests {
                 .unwrap()
                 .text_size(),
             69.,
-            "tray recovery must not overwrite the user's project file"
+            "hiding must autosave the latest editable project"
         );
         editor.present();
         editor.show_setup();
+        editor.setup.options.set_expanded(true);
         editor.setup.delay.grab_focus();
         shortcut(editor.window.upcast_ref(), key::q, ctrl);
         assert!(editor.is_closed());

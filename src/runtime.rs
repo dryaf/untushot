@@ -1,5 +1,5 @@
 //! One desktop process; CLI/hotkey invocations are forwarded by GApplication.
-use crate::{setup::Mode, tray, ui, Args};
+use crate::{capture, setup::Mode, tray, ui, Args, Backend};
 use anyhow::{Context, Result};
 use clap::Parser;
 use glib::translate::*;
@@ -17,6 +17,7 @@ struct Runtime {
     indicator: RefCell<Option<tray::Indicator>>,
     hold: RefCell<Option<gio::ApplicationHoldGuard>>,
     handling: Cell<bool>,
+    backend: Cell<Backend>,
     status: gtk::MenuItem,
     actions: Vec<gtk::MenuItem>,
     cancel: gtk::MenuItem,
@@ -32,18 +33,23 @@ impl Runtime {
         let actions: Vec<_> = [
             crate::i18n::tr("Bereich auswählen"),
             crate::i18n::tr("Bereich auswählen · 3 Sekunden"),
-            crate::i18n::tr("Ganzer Bildschirm"),
-            crate::i18n::tr("Systemauswahl (Monitor / Fenster)"),
+            crate::i18n::tr("Bildschirm"),
+            crate::i18n::tr("Fenster oder Bildschirm wählen"),
             crate::i18n::tr("Editor öffnen"),
         ]
         .into_iter()
         .map(|label| {
             let item = gtk::MenuItem::with_label(label);
+            item.show_all();
+            item.set_no_show_all(true);
             menu.append(&item);
             item
         })
         .collect();
         let cancel = gtk::MenuItem::with_label(crate::i18n::tr("Aufnahme abbrechen"));
+        cancel.show_all();
+        cancel.set_no_show_all(true);
+        cancel.hide();
         cancel.set_sensitive(false);
         menu.append(&cancel);
         menu.append(&gtk::SeparatorMenuItem::new());
@@ -56,17 +62,21 @@ impl Runtime {
             indicator: RefCell::new(None),
             hold: RefCell::new(None),
             handling: Cell::new(false),
+            backend: Cell::new(Backend::Auto),
             status,
             actions,
             cancel,
             menu,
         });
+        runtime.update_capture_actions();
         for (i, item) in runtime.actions.iter().enumerate() {
             let weak = Rc::downgrade(&runtime);
             item.connect_activate(move |_| {
                 if let Some(r) = weak.upgrade() {
                     let mut args = Args::parse_from(["untushot"]);
+                    args.backend = r.backend.get();
                     args.capture = match i {
+                        0 | 1 if capture::uses_desktop_chooser(args.backend) => Some(Mode::System),
                         0 | 1 => Some(Mode::Region),
                         2 => Some(Mode::Full),
                         3 => Some(Mode::System),
@@ -117,9 +127,30 @@ impl Runtime {
                 item.set_sensitive(!busy && !r.handling.get());
             }
             r.cancel.set_sensitive(busy);
+            r.cancel.set_visible(busy);
             glib::ControlFlow::Continue
         });
         runtime
+    }
+    fn set_backend(&self, backend: Backend) {
+        self.backend.set(backend);
+        self.update_capture_actions();
+    }
+    fn update_capture_actions(&self) {
+        let desktop = capture::uses_desktop_chooser(self.backend.get());
+        self.actions[0].set_label(if desktop {
+            crate::i18n::tr("Screenshot aufnehmen")
+        } else {
+            crate::i18n::tr("Bereich auswählen")
+        });
+        self.actions[1].set_label(if desktop {
+            crate::i18n::tr("Aufnahmeauswahl in 3 Sekunden")
+        } else {
+            crate::i18n::tr("Bereich auswählen · 3 Sekunden")
+        });
+        for (index, item) in self.actions.iter().enumerate() {
+            item.set_visible(!desktop || !matches!(index, 2 | 3));
+        }
     }
     fn ensure_indicator(&self) -> Result<()> {
         if self.indicator.borrow().is_some() {
@@ -194,11 +225,13 @@ impl Runtime {
             crate::i18n::eprintln!("UntuShot ohne Tray: {error:#}");
         }
         if args.background {
+            self.set_backend(args.backend);
             return Ok(crate::i18n::tr("UntuShot wartet im Hintergrund").into());
         }
         if existing.as_ref().is_some_and(|e| e.is_capturing()) {
             crate::i18n::bail!("Eine Aufnahme läuft bereits");
         }
+        self.set_backend(args.backend);
         let new = existing.is_none();
         let e = existing.unwrap_or_else(|| {
             let e = ui::launch(&self.app, args.clone());
@@ -299,4 +332,63 @@ pub fn run(mut args: Args) -> glib::ExitCode {
 #[cfg(test)]
 pub(crate) fn showcase_menu(app: &gtk::Application) -> gtk::Menu {
     Runtime::new(app).menu.clone()
+}
+
+#[cfg(test)]
+pub(crate) fn assert_quit_with_error(app: &gtk::Application, editor: &Rc<ui::Editor>) {
+    let runtime = Runtime::new(app);
+    *runtime.editor.borrow_mut() = Some(editor.clone());
+    runtime
+        .request(Args::parse_from(["untushot", "--quit"]))
+        .expect("an error popup must not block the quit command");
+    assert!(editor.is_closed());
+}
+
+#[cfg(test)]
+pub(crate) fn start_capture_for_test(app: &gtk::Application, args: Args) -> Rc<ui::Editor> {
+    let runtime = Runtime::new(app);
+    runtime.request(args).expect("cold-start capture command");
+    let editor = runtime.editor.borrow().clone().unwrap();
+    editor
+}
+
+#[cfg(test)]
+pub(crate) fn start_tray_capture_for_test(app: &gtk::Application, delayed: bool) -> Rc<ui::Editor> {
+    let runtime = Runtime::new(app);
+    runtime.set_backend(Backend::Grim);
+    runtime.menu.show_all();
+    // The menu itself stays unmapped until opened by the tray host.
+    assert_eq!(
+        runtime.actions.iter().filter(|i| i.get_visible()).count(),
+        5
+    );
+    assert_eq!(
+        runtime.actions[0].label().as_deref(),
+        Some(crate::i18n::tr("Bereich auswählen"))
+    );
+    runtime.set_backend(Backend::Portal);
+    runtime.menu.show_all();
+    assert_eq!(
+        runtime.actions.iter().filter(|i| i.get_visible()).count(),
+        3
+    );
+    assert_eq!(
+        runtime.actions[0].label().as_deref(),
+        Some(crate::i18n::tr("Screenshot aufnehmen"))
+    );
+    assert_eq!(
+        runtime.actions[1].label().as_deref(),
+        Some(crate::i18n::tr("Aufnahmeauswahl in 3 Sekunden"))
+    );
+    assert!(!runtime.actions[2].get_visible() && !runtime.actions[3].get_visible());
+    assert!(runtime.actions[4].get_visible());
+    assert!(runtime.actions[0].child().unwrap().get_visible());
+    assert!(!runtime.cancel.get_visible());
+    runtime.actions[usize::from(delayed)].activate();
+    let editor = runtime
+        .editor
+        .borrow()
+        .clone()
+        .expect("tray action started the editor");
+    editor
 }

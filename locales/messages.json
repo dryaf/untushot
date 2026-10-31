@@ -1084,11 +1084,6 @@
     "fr": "Votre travail",
     "es": "Tu trabajo"
   },
-  "Autosicherung ersetzt keine gespeicherte Bild- oder Projektdatei.": {
-    "en": "Autosave does not replace a saved image or project file.",
-    "fr": "La sauvegarde automatique ne remplace pas un fichier image ou projet enregistré.",
-    "es": "El guardado automático no sustituye a un archivo de imagen o proyecto guardado."
-  },
   "Alle Ebenen zum Weiterbearbeiten speichern · Strg+Alt+S": {
     "en": "Save all layers for further editing · Ctrl+Alt+S",
     "fr": "Enregistrer tous les calques pour poursuivre l’édition · Ctrl+Alt+S",
@@ -2058,5 +2053,410 @@
     "en": "Preview {:.0}% · Sizes in image pixels",
     "fr": "Aperçu {:.0} % · Tailles en pixels de l’image",
     "es": "Vista previa {:.0} % · Tamaños en píxeles de imagen"
+  },
+  "Alle verfügbaren Bildschirme": {
+    "en": "All available screens",
+    "fr": "Tous les écrans disponibles",
+    "es": "Todas las pantallas disponibles"
+  },
+  "Aufnahme abgebrochen. Du kannst erneut aufnehmen oder zum Editor zurückkehren.": {
+    "en": "Capture cancelled. Try again or return to the editor.",
+    "fr": "Capture annulée. Réessayez ou revenez à l’éditeur.",
+    "es": "Captura cancelada. Inténtalo de nuevo o vuelve al editor."
+  },
+  "Aufnahmeart wählen": {
+    "en": "Choose capture method",
+    "fr": "Choisir le mode de capture",
+    "es": "Elegir método de captura"
+  },
+  "Aufnahmekürzel bleiben aktiv. Mit „UntuShot beenden“ wird die Anwendung vollständig geschlossen.": {
+    "en": "Capture shortcuts stay active. Use “Quit UntuShot” to exit completely.",
+    "fr": "Les raccourcis de capture restent actifs. « Quitter UntuShot » ferme complètement l’application.",
+    "es": "Los atajos de captura siguen activos. Usa «Salir de UntuShot» para cerrar la aplicación por completo."
+  },
+  "Autosicherung nicht verfügbar. Bitte zuerst ein bearbeitbares Projekt speichern.": {
+    "en": "Recovery is unavailable. Save an editable project first.",
+    "fr": "La récupération est indisponible. Enregistrez d’abord un projet modifiable.",
+    "es": "La recuperación no está disponible. Guarda primero un proyecto editable."
+  },
+  "Bearbeitbare Projekte enthalten das Originalbild – auch verdeckte oder geschwärzte Inhalte. Zum Teilen ein Bild exportieren.": {
+    "en": "Editable projects include the original image, including content covered or redacted. Export an image for sharing.",
+    "fr": "Les projets modifiables contiennent l’image originale, y compris les éléments masqués ou caviardés. Exportez une image pour la partager.",
+    "es": "Los proyectos editables incluyen la imagen original, incluso el contenido tapado u ocultado. Exporta una imagen para compartirla."
+  },
+  "Bearbeitbares Projekt speichern unter …": {
+    "en": "Save editable project as …",
+    "fr": "Enregistrer le projet modifiable sous …",
+    "es": "Guardar proyecto editable como …"
+  },
+  "Beim Schließen im Hintergrund weiterlaufen": {
+    "en": "Keep running when the window closes",
+    "fr": "Continuer en arrière-plan à la fermeture",
+    "es": "Seguir en segundo plano al cerrar la ventana"
+  },
+  "Beim Schließen läuft UntuShot im Hintergrund weiter. Zum vollständigen Beenden nutze „UntuShot beenden“ oder Strg+Q.": {
+    "en": "Closing the window keeps UntuShot running in the background. Use “Quit UntuShot” or Ctrl+Q to exit completely.",
+    "fr": "Fermer la fenêtre laisse UntuShot actif en arrière-plan. Utilisez « Quitter UntuShot » ou Ctrl+Q pour quitter complètement.",
+    "es": "Al cerrar la ventana, UntuShot sigue en segundo plano. Usa «Salir de UntuShot» o Ctrl+Q para salir por completo."
+  },
+  "Bild als PNG exportieren": {
+    "en": "Export image as PNG",
+    "fr": "Exporter l’image en PNG",
+    "es": "Exportar imagen como PNG"
+  },
+  "Bild exportieren": {
+    "en": "Export image",
+    "fr": "Exporter l’image",
+    "es": "Exportar imagen"
+  },
+  "Bild exportieren unter …": {
+    "en": "Export image as …",
+    "fr": "Exporter l’image sous …",
+    "es": "Exportar imagen como …"
+  },
+  "Bild übernommen · Markierungen hinzufügen oder als Bild exportieren": {
+    "en": "Image imported · Add annotations or export an image",
+    "fr": "Image importée · Ajoutez des annotations ou exportez une image",
+    "es": "Imagen importada · Añade anotaciones o exporta una imagen"
+  },
+  "Bildschirm": {
+    "en": "Screen",
+    "fr": "Écran",
+    "es": "Pantalla"
+  },
+  "Bildschirm vollständig aufnehmen": {
+    "en": "Capture the whole screen",
+    "fr": "Capturer l’écran entier",
+    "es": "Capturar toda la pantalla"
+  },
+  "Bildschirm {index} ist nicht direkt auswählbar. Bitte Quelle prüfen oder Fenster / Bildschirm … verwenden.": {
+    "en": "Screen {index} cannot be selected directly. Check the source or use Window / screen …",
+    "fr": "L’écran {index} ne peut pas être sélectionné directement. Vérifiez la source ou utilisez Fenêtre / écran …",
+    "es": "No se puede seleccionar directamente la pantalla {index}. Revisa la fuente o usa Ventana / pantalla …"
+  },
+  "Dein Desktop bestimmt die verfügbaren Bildschirme. Für einzelne Fenster nutze „Fenster / Bildschirm …“, falls unterstützt.": {
+    "en": "Your desktop determines the available screens. For an individual window, use “Window / screen …” where supported.",
+    "fr": "Votre bureau détermine les écrans disponibles. Pour une fenêtre, utilisez « Fenêtre / écran … » si cette option est prise en charge.",
+    "es": "Tu escritorio determina las pantallas disponibles. Para una ventana, usa «Ventana / pantalla …» si es compatible."
+  },
+  "Der Aufnahmedienst deines Desktops ist nicht erreichbar. Du kannst es erneut versuchen oder ein vorhandenes Bild öffnen. Dein bisheriges Bild bleibt erhalten.": {
+    "en": "Your desktop’s capture service could not be reached. Try again or open an existing image. Your current image is preserved.",
+    "fr": "Le service de capture du bureau est inaccessible. Réessayez ou ouvrez une image existante. Votre image actuelle est conservée.",
+    "es": "No se puede acceder al servicio de captura del escritorio. Reintenta o abre una imagen existente. Se conserva tu imagen actual."
+  },
+  "Der Desktop hat kein Bildschirmfoto geliefert.": {
+    "en": "The desktop did not provide a screenshot.",
+    "fr": "Le bureau n’a pas fourni de capture d’écran.",
+    "es": "El escritorio no proporcionó una captura."
+  },
+  "Die Aktion konnte nicht abgeschlossen werden.": {
+    "en": "The action could not be completed.",
+    "fr": "L’action n’a pas pu être terminée.",
+    "es": "No se pudo completar la acción."
+  },
+  "Die Aufnahme wurde nicht freigegeben oder konnte nicht abgeschlossen werden. Versuche es erneut und bestätige eine mögliche Desktop-Abfrage, oder wähle eine andere Aufnahmeart. Dein bisheriges Bild bleibt erhalten.": {
+    "en": "The capture was not allowed or could not be completed. Try again and accept any desktop prompt, or choose another capture method. Your current image is preserved.",
+    "fr": "La capture n’a pas été autorisée ou n’a pas pu aboutir. Réessayez et acceptez la demande du bureau, ou choisissez un autre mode de capture. Votre image actuelle est conservée.",
+    "es": "La captura no se autorizó o no pudo completarse. Reintenta y acepta la solicitud del escritorio, o elige otro método de captura. Se conserva tu imagen actual."
+  },
+  "Die Bildschirmaufnahme ist fehlgeschlagen.": {
+    "en": "The screenshot could not be taken.",
+    "fr": "La capture d’écran a échoué.",
+    "es": "No se pudo realizar la captura."
+  },
+  "Die Bildschirmaufnahme ist nicht verfügbar.": {
+    "en": "Screen capture is unavailable.",
+    "fr": "La capture d’écran est indisponible.",
+    "es": "La captura de pantalla no está disponible."
+  },
+  "Die Freigabe hat zu lange gedauert.": {
+    "en": "Screenshot permission timed out.",
+    "fr": "Le délai d’autorisation de capture a expiré.",
+    "es": "Se agotó el tiempo para autorizar la captura."
+  },
+  "Ebenen ein-/ausklappen · F9 · Strg+F6: beide Seitenleisten": {
+    "en": "Toggle layers · F9 · Ctrl+F6: both sidebars",
+    "fr": "Afficher/masquer les calques · F9 · Ctrl+F6 : les deux panneaux",
+    "es": "Mostrar/ocultar capas · F9 · Ctrl+F6: ambos paneles"
+  },
+  "Erneut versuchen": {
+    "en": "Retry",
+    "fr": "Réessayer",
+    "es": "Reintentar"
+  },
+  "Fenster / Bildschirm …": {
+    "en": "Window / screen …",
+    "fr": "Fenêtre / écran …",
+    "es": "Ventana / pantalla …"
+  },
+  "Fenster oder Bildschirm wählen": {
+    "en": "Choose window or screen",
+    "fr": "Choisir une fenêtre ou un écran",
+    "es": "Elegir ventana o pantalla"
+  },
+  "Fenster schließen beendet UntuShot. Für Aufnahmekürzel im Hintergrund aktiviere „Beim Schließen im Hintergrund weiterlaufen“ im Menü.": {
+    "en": "Closing the window quits UntuShot. To keep capture shortcuts active, enable “Keep running when the window closes” in the menu.",
+    "fr": "Fermer la fenêtre quitte UntuShot. Pour garder les raccourcis actifs, cochez « Continuer en arrière-plan à la fermeture » dans le menu.",
+    "es": "Cerrar la ventana sale de UntuShot. Para mantener los atajos activos, activa «Seguir en segundo plano al cerrar la ventana» en el menú."
+  },
+  "Fertiges Bild als PNG exportieren · Strg+S": {
+    "en": "Export the finished image as PNG · Ctrl+S",
+    "fr": "Exporter l’image finale en PNG · Ctrl+S",
+    "es": "Exportar la imagen terminada como PNG · Ctrl+S"
+  },
+  "Mit dem Desktop auswählen": {
+    "en": "Choose with your desktop",
+    "fr": "Choisir avec votre bureau",
+    "es": "Elegir con tu escritorio"
+  },
+  "Schließen": {
+    "en": "Close",
+    "fr": "Fermer",
+    "es": "Cerrar"
+  },
+  "Screenshot-Portal nicht verfügbar.": {
+    "en": "Screenshot portal unavailable.",
+    "fr": "Portail de capture indisponible.",
+    "es": "Portal de capturas no disponible."
+  },
+  "Strg+W · Schließt die Anwendung, sofern Hintergrundbetrieb nicht aktiviert ist": {
+    "en": "Ctrl+W · Quits unless background operation is enabled",
+    "fr": "Ctrl+W · Quitter sauf si le mode arrière-plan est activé",
+    "es": "Ctrl+W · Sale salvo si está activado el modo en segundo plano"
+  },
+  "Tastenkürzel": {
+    "en": "Keyboard shortcuts",
+    "fr": "Raccourcis clavier",
+    "es": "Atajos de teclado"
+  },
+  "Tastenkürzel anzeigen · F1": {
+    "en": "Show keyboard shortcuts · F1",
+    "fr": "Afficher les raccourcis clavier · F1",
+    "es": "Mostrar atajos de teclado · F1"
+  },
+  "Tastenkürzel …": {
+    "en": "Keyboard shortcuts …",
+    "fr": "Raccourcis clavier …",
+    "es": "Atajos de teclado …"
+  },
+  "Technische Details": {
+    "en": "Technical details",
+    "fr": "Détails techniques",
+    "es": "Detalles técnicos"
+  },
+  "Verstanden": {
+    "en": "Got it",
+    "fr": "Compris",
+    "es": "Entendido"
+  },
+  "Versuche es erneut oder wähle eine andere Aufnahmeart. Dein bisheriges Bild bleibt erhalten.": {
+    "en": "Retry or choose another capture method. Your current image is preserved.",
+    "fr": "Réessayez ou choisissez un autre mode de capture. Votre image actuelle est conservée.",
+    "es": "Reintenta o elige otro método de captura. Se conserva tu imagen actual."
+  },
+  "Versuche es erneut und bestätige die Aufnahme im Desktopdialog. Dein bisheriges Bild bleibt erhalten.": {
+    "en": "Retry and approve the capture in the desktop dialog. Your current image is preserved.",
+    "fr": "Réessayez et autorisez la capture dans la boîte de dialogue du bureau. Votre image actuelle est conservée.",
+    "es": "Reintenta y autoriza la captura en el diálogo del escritorio. Se conserva tu imagen actual."
+  },
+  "Vom Desktop bereitgestellter Bildschirm": {
+    "en": "Screen provided by your desktop",
+    "fr": "Écran fourni par votre bureau",
+    "es": "Pantalla proporcionada por tu escritorio"
+  },
+  "Wähle ein Fenster oder einen Bildschirm im Desktopdialog. Fensteraufnahme hängt von deinem Desktop ab; alternativ einen Bildschirm aufnehmen und zuschneiden.": {
+    "en": "Choose a window or screen in the desktop dialog. Window capture depends on your desktop; alternatively, capture a screen and crop it.",
+    "fr": "Choisissez une fenêtre ou un écran dans la boîte de dialogue du bureau. La capture de fenêtres dépend du bureau ; sinon, capturez un écran puis recadrez-le.",
+    "es": "Elige una ventana o pantalla en el diálogo del escritorio. La captura de ventanas depende del escritorio; como alternativa, captura una pantalla y recórtala."
+  },
+  "Zeichenfläche · F6 · Werkzeuge mit V, M oder 1–9 wählen": {
+    "en": "Canvas · F6 · Choose tools with V, M or 1–9",
+    "fr": "Zone de dessin · F6 · Outils avec V, M ou 1–9",
+    "es": "Lienzo · F6 · Elige herramientas con V, M o 1–9"
+  },
+  "Tab / Umschalt+Tab": {
+    "en": "Tab / Shift+Tab",
+    "fr": "Tab / Maj+Tab",
+    "es": "Tab / Mayús+Tab"
+  },
+  "Bedienelemente durchgehen": {
+    "en": "Move between controls",
+    "fr": "Parcourir les commandes",
+    "es": "Recorrer controles"
+  },
+  "F6": {
+    "en": "F6",
+    "fr": "F6",
+    "es": "F6"
+  },
+  "Zeichenfläche fokussieren": {
+    "en": "Focus canvas",
+    "fr": "Activer la zone de dessin",
+    "es": "Enfocar el lienzo"
+  },
+  "F8 / F9": {
+    "en": "F8 / F9",
+    "fr": "F8 / F9",
+    "es": "F8 / F9"
+  },
+  "Werkzeuge / Ebenen umschalten": {
+    "en": "Toggle tools / layers",
+    "fr": "Outils / Calques",
+    "es": "Herramientas / Capas"
+  },
+  "Strg+F6": {
+    "en": "Ctrl+F6",
+    "fr": "Ctrl+F6",
+    "es": "Ctrl+F6"
+  },
+  "Beide Seitenleisten umschalten": {
+    "en": "Toggle both sidebars",
+    "fr": "Les deux panneaux",
+    "es": "Ambos paneles"
+  },
+  "Strg+N": {
+    "en": "Ctrl+N",
+    "fr": "Ctrl+N",
+    "es": "Ctrl+N"
+  },
+  "Strg+O": {
+    "en": "Ctrl+O",
+    "fr": "Ctrl+O",
+    "es": "Ctrl+O"
+  },
+  "Strg+S": {
+    "en": "Ctrl+S",
+    "fr": "Ctrl+S",
+    "es": "Ctrl+S"
+  },
+  "Strg+Alt+S": {
+    "en": "Ctrl+Alt+S",
+    "fr": "Ctrl+Alt+S",
+    "es": "Ctrl+Alt+S"
+  },
+  "Strg+C / Strg+V": {
+    "en": "Ctrl+C / Ctrl+V",
+    "fr": "Ctrl+C / Ctrl+V",
+    "es": "Ctrl+C / Ctrl+V"
+  },
+  "Bild kopieren / als Ebene einfügen": {
+    "en": "Copy image / paste as layer",
+    "fr": "Copier l’image / Coller comme calque",
+    "es": "Copiar imagen / Pegar como capa"
+  },
+  "Strg+Z / Strg+Umschalt+Z": {
+    "en": "Ctrl+Z / Ctrl+Shift+Z",
+    "fr": "Ctrl+Z / Ctrl+Maj+Z",
+    "es": "Ctrl+Z / Ctrl+Mayús+Z"
+  },
+  "Rückgängig / Wiederholen": {
+    "en": "Undo / Redo",
+    "fr": "Annuler / Rétablir",
+    "es": "Deshacer / Rehacer"
+  },
+  "V / M / 1–9": {
+    "en": "V / M / 1–9",
+    "fr": "V / M / 1–9",
+    "es": "V / M / 1–9"
+  },
+  "Werkzeug wählen (Zeichenfläche)": {
+    "en": "Choose tool (canvas)",
+    "fr": "Choisir l’outil (dessin)",
+    "es": "Elegir herramienta (lienzo)"
+  },
+  "Pfeile / Umschalt+Pfeile": {
+    "en": "Arrows / Shift+Arrows",
+    "fr": "Flèches / Maj+Flèches",
+    "es": "Flechas / Mayús+Flechas"
+  },
+  "1 / 10 Pixel verschieben": {
+    "en": "Move 1 / 10 pixels",
+    "fr": "Déplacer de 1 / 10 pixels",
+    "es": "Mover 1 / 10 píxeles"
+  },
+  "Enter / Esc": {
+    "en": "Enter / Esc",
+    "fr": "Entrée / Échap",
+    "es": "Intro / Esc"
+  },
+  "Bestätigen / Abbrechen": {
+    "en": "Confirm / Cancel",
+    "fr": "Confirmer / Annuler",
+    "es": "Confirmar / Cancelar"
+  },
+  "Strg+W": {
+    "en": "Ctrl+W",
+    "fr": "Ctrl+W",
+    "es": "Ctrl+W"
+  },
+  "Strg+Q": {
+    "en": "Ctrl+Q",
+    "fr": "Ctrl+Q",
+    "es": "Ctrl+Q"
+  },
+  "Optionen": {
+    "en": "Options",
+    "fr": "Options",
+    "es": "Opciones"
+  },
+  "Bildschirm und Verzögerung": {
+    "en": "Screen and delay",
+    "fr": "Écran et délai",
+    "es": "Pantalla y retardo"
+  },
+  "Optionen · Bildschirm {}": {
+    "en": "Options · Screen {}",
+    "fr": "Options · Écran {}",
+    "es": "Opciones · Pantalla {}"
+  },
+  "Dein Desktop öffnet seine Aufnahmeauswahl. Bestätige dort das Bild; danach kannst du es hier zuschneiden.": {
+    "en": "Your desktop opens its capture chooser. Confirm the image there; you can crop it here afterwards.",
+    "fr": "Votre bureau ouvre son sélecteur de capture. Confirmez l’image ; vous pourrez ensuite la recadrer ici.",
+    "es": "El escritorio abre su selector de captura. Confirma la imagen allí; después podrás recortarla aquí."
+  },
+  "Screenshot-Portal: Antwortcode {code}": {
+    "en": "Screenshot portal: response code {code}",
+    "fr": "Portail de capture : code de réponse {code}",
+    "es": "Portal de capturas: código de respuesta {code}"
+  },
+  "Änderungen konnten nicht automatisch gespeichert werden": {
+    "en": "Changes could not be saved automatically",
+    "fr": "Les modifications n’ont pas pu être enregistrées automatiquement",
+    "es": "No se pudieron guardar los cambios automáticamente"
+  },
+  "Projekt geöffnet · Änderungen werden automatisch gespeichert": {
+    "en": "Project opened · Changes save automatically",
+    "fr": "Projet ouvert · Les modifications sont enregistrées automatiquement",
+    "es": "Proyecto abierto · Los cambios se guardan automáticamente"
+  },
+  "PNG exportiert: {} · Bearbeitung wird automatisch gespeichert": {
+    "en": "PNG exported: {} · Edits save automatically",
+    "fr": "PNG exporté : {} · Les modifications sont enregistrées automatiquement",
+    "es": "PNG exportado: {} · Los cambios se guardan automáticamente"
+  },
+  "Aufnahmeoptionen …": {
+    "en": "Capture options…",
+    "fr": "Options de capture…",
+    "es": "Opciones de captura…"
+  },
+  "Die Aufnahme wurde nicht freigegeben oder konnte nicht abgeschlossen werden. Versuche es erneut und bestätige die Aufnahme im Desktopdialog. Dein bisheriges Bild bleibt erhalten.": {
+    "en": "The capture was not allowed or could not be completed. Try again and confirm the capture in the desktop chooser. Your current image is preserved.",
+    "fr": "La capture n’a pas été autorisée ou n’a pas pu être terminée. Réessayez et confirmez la capture dans la fenêtre du bureau. Votre image actuelle est conservée.",
+    "es": "La captura no se permitió o no se pudo completar. Inténtalo de nuevo y confirma la captura en el selector del escritorio. La imagen actual se conserva."
+  },
+  "Keine Aufnahme übernommen.": {
+    "en": "No screenshot taken.",
+    "fr": "Aucune capture effectuée.",
+    "es": "No se ha realizado ninguna captura."
+  },
+  "Aufnahmeauswahl in 3 Sekunden": {
+    "en": "Open capture chooser in 3 seconds",
+    "fr": "Ouvrir le sélecteur de capture dans 3 secondes",
+    "es": "Abrir selector de captura en 3 segundos"
+  },
+  "PNG für die Weitergabe exportieren. Projekte behalten das Original und alle Ebenen.": {
+    "en": "Export a PNG to share. Projects keep the original image and every layer.",
+    "fr": "Exportez un PNG pour le partager. Les projets conservent l’image originale et tous les calques.",
+    "es": "Exporta un PNG para compartir. Los proyectos conservan la imagen original y todas las capas."
   }
 }

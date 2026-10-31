@@ -21,6 +21,10 @@ make test                 # Formatting, backports, Rust tests, Clippy, installer
 make test-ux              # Editor workflows and a 30-layer editing session
 make test-clipboard       # PNG/JPEG transport on a private display
 make test-languages       # English, German, French and Spanish UI checks
+python3 tools/test_clipboard.py --suite portal  # Cold start on a private D-Bus session with a synthetic portal
+python3 tools/test_clipboard.py --suite capture-errors  # Error dismissal and quit
+python3 tools/test_clipboard.py --suite autosave --language en  # Sidecars, timer, restart, collisions and failed writes
+python3 tools/test_clipboard.py --suite ux-changes --language en  # Focus, recovery actions, panels and exit
 make audit                # Backports, optimized security tests and OSV scan
 ```
 
@@ -210,8 +214,9 @@ active Rust toolchain and cached Cargo registry read-only, and writes to
 `target/packages/` and `dist/`. Rust 1.75.0 is used for release builds. The host's
 installed application, clipboard and desktop settings are not changed.
 
-The builder compiles the optimized application, runs Rust/security tests and the
-four-language, editor, layer and clipboard GTK checks, then generates both
+The builder compiles the optimized application, runs Rust/security and installer
+tests plus the four-language, editor, layer, clipboard, portal, capture-error,
+autosave and UX GTK checks, then generates both
 packages. `tools/verify_release.py` verifies their hashes, architecture, version,
 language selection and GUI startup on a private Broadway display. The AppImage
 can be extracted for these checks without FUSE. `--skip-checks` still compiles and

@@ -39,16 +39,16 @@ Prebuilt packages are available for **x86-64 / amd64**:
 
 ```sh
 # Debian / Ubuntu package
-sudo apt install ./untushot_0.8.1_amd64.deb
+sudo apt install ./untushot_0.9.0_amd64.deb
 
 # Portable AppImage
-chmod +x UntuShot-0.8.1-x86_64.AppImage
-./UntuShot-0.8.1-x86_64.AppImage
+chmod +x UntuShot-0.9.0-x86_64.AppImage
+./UntuShot-0.9.0-x86_64.AppImage
 ```
 
 Without FUSE, prefix the AppImage command with `APPIMAGE_EXTRACT_AND_RUN=1`.
 The release includes `SHA256SUMS` and build information. See the
-[release notes](docs/releases/v0.8.1.md) for installation details.
+[release notes](docs/releases/v0.9.0.md) for installation details.
 
 ### Build from source
 
@@ -94,11 +94,21 @@ physical mixed-DPI capture.
 <details>
 <summary><strong>01 · Capture your way</strong> — region, full screen, system selection and a cancellable timer</summary>
 
-Choose the source and an optional **0–60 second delay**. For a region capture,
+On GNOME and other desktops using the portal, **New screenshot** and **Ctrl+N**
+open the desktop chooser directly. Cancelling returns to your current image.
+Use **Capture options…** in the menu for an optional **0–60 second delay**.
+With direct capture (grim), choose a mode first; expand **Options** to select a
+screen or set the delay. Web import and the demo are in the application
+menu. For a region capture,
 select and confirm the area before the editing tools appear. Cancel a countdown
-without losing the document you were working on.
+without losing the document you were working on. Portal captures (including the
+Ctrl+Shift+X shortcut on GNOME) open the desktop capture chooser for confirmation
+before opening the confirmed image directly in UntuShot’s editor. No second
+region selection is required; the Crop tool remains available for adjustments.
+This also works when starting the app
+from a closed state, without a background permission prompt.
 
-![Capture modes, delay, cancellation and region selection in the English UntuShot interface](docs/media/19-capture.gif)
+![Compact capture options, cancellable delay and editing without a second selection](docs/media/19-capture.gif)
 
 </details>
 
@@ -251,8 +261,10 @@ edit its text. Right-clicking a selected group member preserves the multi-select
 
 Zoom around the pointer with **Ctrl+wheel**, pan with **Space+drag** or the middle
 mouse button, and press **0** to fit the image. F8/F9 toggle the tool and layer
-panels; Tab toggles both. Resize the layer sidebar by dragging its divider.
-Layer properties keep the height they need; the list above scrolls independently.
+panels; Ctrl+F6 toggles both. Tab and Shift+Tab navigate controls; F6 focuses the
+canvas. Resize the layer sidebar by dragging its divider. The layer panel opens
+automatically when you add your first annotation. Drag the divider between layers
+and properties to resize them; each section scrolls independently.
 
 ![Zooming, panning, hiding both sidebars and resizing the layer inspector](docs/media/11-workspace.gif)
 
@@ -265,12 +277,20 @@ Layer properties keep the height they need; the list above scrolls independently
 <details>
 <summary><strong>15 · Editable projects</strong> — save and reopen the original, crop and every layer</summary>
 
-**Save project** writes a `.untushot` file with embedded image layers. Reopen it to
-continue editing each object, including text, borders and shadows. The original
-source files do not need to remain in place. Older `.rustshot` projects are still
-readable.
+Edits save automatically in the background. A saved screenshot gets an editable
+sidecar, for example `Screenshot.png.untushot`, beside the image. Captures without
+a filename get a uniquely named `.untushot` project in **Pictures/Screenshots**
+(or your chosen export folder). Existing named projects save in place.
 
-![Saving a project, tracking changes and reopening its editable layers](docs/media/12-projects.gif)
+Opening a screenshot restores its matching sidecar, including individual layers
+and the crop. Switching captures or closing the app finishes saving without a
+project-save prompt. **Save project as** remains available for a separate copy.
+Sidecars contain the original image, including cropped or covered content;
+export the PNG when sharing. PNG exports remain explicit and are not rewritten
+by background editing. Conflicting or unwritable destinations are reported and
+never silently discarded.
+
+![Automatically saving editable sidecars and reopening a screenshot with its layers](docs/media/12-projects.gif)
 
 </details>
 
@@ -294,8 +314,9 @@ image. Hiding the window to the tray is fine.
 
 Recovery files preserve the original image and editable state. “Automatically
 saved” appears only after the write succeeds. An unlocked saved session can be restored
-on the next start; active sessions are protected by locks. Save a project when
-you want a durable, named file of your own.
+on the next start; active sessions are protected by locks. Automatic editable
+saves remain available after switching screenshots, and the last session keeps
+its autosave destination across restarts.
 
 ![Saving a recovery file and restoring all annotations from it](docs/media/17-recovery.gif)
 
@@ -352,9 +373,12 @@ French or Spanish**, with English as the fallback.
 <details>
 <summary><strong>22 · Ready in the tray</strong> — quick capture, delayed capture and desktop shortcuts</summary>
 
-Start a capture from the tray without opening the editor first. The application
-menu offers region, delayed region and full-screen capture, system selection,
-opening the editor, cancelling a capture and quitting. On supported GNOME setups,
+Start a capture from the tray without opening the editor first. On GNOME and
+other desktops using the native capture chooser, the menu offers **Take
+screenshot**, **Open capture chooser in 3 seconds**, **Open editor** and **Quit**.
+The chooser handles region, window and screen selection. Direct grim capture
+keeps separate capture modes. **Cancel capture** appears while a capture is
+running. On supported GNOME setups,
 installation adds **Ctrl+Shift+X**, login autostart and **Open with** for PNG/JPEG.
 
 ![Preview of UntuShot's actual tray menu with capture and quit actions](docs/media/21-tray.gif)
@@ -405,16 +429,18 @@ This README and all feature-tour GIFs use English.
 | Nudge / larger nudge | Arrow keys / `Shift` + arrow keys |
 | Zoom / pan / fit image | `Ctrl` + wheel / `Space` + drag / `0` |
 | Snap / temporarily bypass snapping | `S` / hold `Alt` |
-| Toggle tools / layers / both panels | `F8` / `F9` / `Tab` |
+| Toggle tools / layers / both panels | `F8` / `F9` / `Ctrl+F6` |
+| Navigate controls / focus canvas / shortcut help | `Tab` and `Shift+Tab` / `F6` / `F1` |
 | Open image or project | `Ctrl+O` |
-| Export PNG / export PNG as | `Ctrl+S` / `Ctrl+Shift+S` |
-| Save project / save project as | `Ctrl+Alt+S` / `Ctrl+Alt+Shift+S` |
+| Export image / export image as | `Ctrl+S` / `Ctrl+Shift+S` |
+| Save editable project / save editable project as | `Ctrl+Alt+S` / `Ctrl+Alt+Shift+S` |
 | Apply / cancel the current edit | `Enter` / `Esc` |
 | Fullscreen / close window / quit completely | `F11` / `Ctrl+W` / `Ctrl+Q` |
 
 ¹ Set up by the supported desktop integration; other desktops can bind the same
-command manually. Closing the window keeps the app in the background when its
-tray integration is active.
+command manually. Closing the window quits UntuShot by default. Enable **Keep running
+when the window closes** in the application menu to keep tray capture shortcuts
+active. **Quit UntuShot** or Ctrl+Q always exits completely.
 
 ## A few useful commands
 

@@ -14,6 +14,8 @@ pub struct Preferences {
     pub snapping: bool,
     pub tools_visible: bool,
     pub layers_visible: bool,
+    pub close_to_tray: bool,
+    pub close_behavior_explained: bool,
     pub layer_panel_width: i32,
     pub export_directory: Option<PathBuf>,
     pub history_visible: bool,
@@ -29,6 +31,8 @@ impl Default for Preferences {
             snapping: true,
             tools_visible: true,
             layers_visible: true,
+            close_to_tray: false,
+            close_behavior_explained: false,
             layer_panel_width: 252,
             export_directory: None,
             history_visible: true,
@@ -98,9 +102,14 @@ mod tests {
             rect: Rect::new(-1080., 0., 1080., 1920.),
             scale: 1.,
         };
-        assert!(serde_json::from_str::<Preferences>("{}").unwrap().snapping);
+        let defaults = serde_json::from_str::<Preferences>("{}").unwrap();
+        assert!(defaults.snapping);
+        assert!(!defaults.close_to_tray);
+        assert!(!defaults.close_behavior_explained);
         let p = Preferences {
             snapping: false,
+            close_to_tray: true,
+            close_behavior_explained: true,
             tool: Tool::Arrow,
             width: 7.,
             layer_panel_width: 380,

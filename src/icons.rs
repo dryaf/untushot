@@ -320,6 +320,67 @@ pub fn icon_control(button: &impl IsA<gtk::Button>) {
     button.set_valign(gtk::Align::Center);
 }
 
+pub fn accessible_name(widget: &impl IsA<gtk::Widget>, name: &str) {
+    use gtk::atk::prelude::*;
+    if let Some(accessible) = widget.accessible() {
+        accessible.set_name(name);
+    }
+}
+
+/// Composite buttons have no GtkButton label property. Give assistive tools
+/// the same text (or tooltip for icon-only actions) that sighted users see.
+pub fn name_controls(widget: &gtk::Widget) {
+    fn labels(widget: &gtk::Widget) -> Vec<gtk::Label> {
+        if let Some(label) = widget.downcast_ref::<gtk::Label>() {
+            return vec![label.clone()];
+        }
+        widget
+            .downcast_ref::<gtk::Container>()
+            .map(|c| c.children().iter().flat_map(labels).collect())
+            .unwrap_or_default()
+    }
+    fn update(button: &gtk::Button) {
+        let text = labels(button.upcast_ref())
+            .iter()
+            .map(|label| label.text().to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+        let name = if text.is_empty() {
+            button
+                .tooltip_text()
+                .map(|s| s.to_string())
+                .unwrap_or_default()
+        } else {
+            text
+        };
+        if !name.is_empty() {
+            accessible_name(button, &name);
+        }
+    }
+    if let Some(button) = widget
+        .downcast_ref::<gtk::Button>()
+        .filter(|b| b.label().is_none())
+    {
+        update(button);
+        // Native labelled buttons already track their labels. Composite controls
+        // need to announce changes too (capture mode, countdown, current size).
+        for label in labels(widget) {
+            let weak = button.downgrade();
+            label.connect_label_notify(move |_| {
+                if let Some(button) = weak.upgrade() {
+                    update(&button);
+                }
+            });
+        }
+        button.connect_tooltip_text_notify(update);
+    }
+    if let Some(container) = widget.downcast_ref::<gtk::Container>() {
+        for child in container.children() {
+            name_controls(&child);
+        }
+    }
+}
+
 pub fn tool(tool: crate::document::Tool) -> &'static str {
     use crate::document::Tool::*;
     match tool {

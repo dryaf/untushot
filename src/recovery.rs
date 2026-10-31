@@ -15,7 +15,12 @@ use std::{
 };
 
 enum Job {
-    Save(u64, SavedEdits, Option<RawBackground>),
+    Save(
+        u64,
+        SavedEdits,
+        Option<RawBackground>,
+        Result<Option<std::sync::Arc<crate::autosave::Target>>, String>,
+    ),
     Flush(mpsc::Sender<Result<(), String>>),
     Stop,
 }
@@ -30,6 +35,7 @@ pub struct Session {
     worker: Option<thread::JoinHandle<()>>,
     _lock: File,
     pub path: PathBuf,
+    pub restored_autosave: Option<crate::autosave::Location>,
 }
 
 fn lock(path: &Path) -> Result<Option<File>> {
@@ -110,6 +116,11 @@ impl Session {
             let guard = lock(&path)?.context(crate::i18n::tr("Sitzung wird bereits verwendet"))?;
             (path, guard)
         };
+        let restored_autosave = if restored.is_some() {
+            crate::autosave::header(&path).ok().and_then(|h| h.autosave)
+        } else {
+            None
+        };
         let (tx, rx) = mpsc::channel();
         let (completion_tx, completions) = mpsc::channel();
         let target = path.clone();
@@ -118,7 +129,7 @@ impl Session {
             let mut last_error = None;
             for job in rx {
                 match job {
-                    Job::Save(ticket, edits, raw) => {
+                    Job::Save(ticket, edits, raw, autosave) => {
                         let result = (|| -> Result<()> {
                             if let Some(raw) = raw {
                                 let mut png = Vec::new();
@@ -140,10 +151,31 @@ impl Session {
                             let tmp = tempfile::Builder::new()
                                 .prefix(".recovery-")
                                 .tempfile_in(parent)?;
-                            edits.write(background, tmp.as_file())?;
+                            let mirrored = match &autosave {
+                                Ok(Some(target)) => target.write(&edits, background),
+                                Ok(None) => Ok(()),
+                                Err(error) => Err(anyhow::Error::msg(error.clone())),
+                            };
+                            let location = if mirrored.is_ok() {
+                                autosave
+                                    .as_ref()
+                                    .ok()
+                                    .and_then(|t| t.as_ref())
+                                    .map(|t| t.location())
+                            } else {
+                                None
+                            };
+                            // Keep recovery even if the named destination is unwritable.
+                            edits.write_with_metadata(
+                                background,
+                                tmp.as_file(),
+                                None,
+                                location.as_ref(),
+                            )?;
                             tmp.as_file().sync_all()?;
                             tmp.persist(&target).map_err(|e| e.error)?;
                             File::open(parent)?.sync_all()?;
+                            mirrored?;
                             Ok(())
                         })();
                         last_error = result.err().map(|e| crate::i18n::format!("{e:#}"));
@@ -167,11 +199,21 @@ impl Session {
                 worker: Some(worker),
                 _lock: guard,
                 path,
+                restored_autosave,
             },
             restored,
         ))
     }
+    #[cfg(test)]
     pub fn save(&self, doc: &Document, include_background: bool) -> Result<u64> {
+        self.save_with_sidecar(doc, include_background, Ok(None))
+    }
+    pub fn save_with_sidecar(
+        &self,
+        doc: &Document,
+        include_background: bool,
+        target: Result<Option<std::sync::Arc<crate::autosave::Target>>, String>,
+    ) -> Result<u64> {
         let raw = if include_background {
             Some(doc.raw_background()?)
         } else {
@@ -180,7 +222,7 @@ impl Session {
         let ticket = self.next_ticket.get();
         self.next_ticket.set(ticket + 1);
         self.tx
-            .send(Job::Save(ticket, doc.recovery_edits(), raw))
+            .send(Job::Save(ticket, doc.recovery_edits(), raw, target))
             .map_err(|_| crate::i18n::anyhow!("Autosicherung wurde beendet"))?;
         Ok(ticket)
     }

@@ -790,13 +790,23 @@ impl Document {
         surface_to_pixbuf(&surface)
     }
 
+    #[cfg(test)]
     pub fn write_project(&self, writer: impl std::io::Write) -> Result<()> {
+        self.write_project_with_source(writer, None)
+    }
+    pub fn write_project_with_source(
+        &self,
+        writer: impl std::io::Write,
+        source: Option<&crate::autosave::SourceStamp>,
+    ) -> Result<()> {
         use base64::Engine;
         let mut png = Vec::new();
         crate::pixels::write_png(&surface_to_pixbuf(&self.image)?, &mut png)?;
-        self.recovery_edits().write(
+        self.recovery_edits().write_with_metadata(
             &base64::engine::general_purpose::STANDARD.encode(png),
             writer,
+            source,
+            None,
         )?;
         Ok(())
     }
@@ -960,7 +970,17 @@ pub struct SavedEdits {
     monitors: Vec<Monitor>,
 }
 impl SavedEdits {
+    #[cfg(test)]
     pub fn write(&self, background: &str, writer: impl std::io::Write) -> Result<()> {
+        self.write_with_metadata(background, writer, None, None)
+    }
+    pub fn write_with_metadata(
+        &self,
+        background: &str,
+        writer: impl std::io::Write,
+        sidecar_source: Option<&crate::autosave::SourceStamp>,
+        autosave: Option<&crate::autosave::Location>,
+    ) -> Result<()> {
         #[derive(serde::Serialize)]
         struct RefProject<'a> {
             images: BTreeMap<u64, &'a str>,
@@ -968,6 +988,10 @@ impl SavedEdits {
             background: &'a str,
             snapshot: &'a Snapshot,
             monitors: &'a [Monitor],
+            #[serde(skip_serializing_if = "Option::is_none")]
+            sidecar_source: Option<&'a crate::autosave::SourceStamp>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            autosave: Option<&'a crate::autosave::Location>,
         }
         serde_json::to_writer(
             writer,
@@ -981,6 +1005,8 @@ impl SavedEdits {
                 background,
                 snapshot: &self.snapshot,
                 monitors: &self.monitors,
+                sidecar_source,
+                autosave,
             },
         )?;
         Ok(())

@@ -1,3 +1,4 @@
+mod autosave;
 mod capture;
 mod color;
 mod document;

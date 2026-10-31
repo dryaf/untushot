@@ -10,7 +10,7 @@
 #untushot .small, #untushot .shortcut { font-size: 0.9em; }
 #untushot .shortcut { opacity: 0.6; }
 #untushot .card-title { font-weight: bold; }
-#untushot button.capture-card { padding: 16px 14px; border-radius: 12px; }
+#untushot button.capture-card { padding: 12px 14px; border-radius: 8px; }
 #untushot #inspector list { border: 1px solid @borders; border-radius: 6px; }
 
 /* Quiet surfaces, with the system accent reserved for selection and primary actions. */
@@ -48,3 +48,13 @@
     background-color: alpha(@theme_selected_bg_color, 0.18);
     border-color: @theme_selected_bg_color;
 }
+
+/* Keyboard focus must remain visible even on flat tools and icon controls. */
+#untushot button:focus, #untushot entry:focus {
+    outline-color: @theme_selected_bg_color;
+    outline-style: solid;
+    outline-width: 2px;
+    outline-offset: -2px;
+}
+
+#untushot-shortcuts .shortcut-key { font-family: monospace; font-size: 0.95em; }

@@ -5,7 +5,7 @@
     "language": "en",
     "duration_seconds": 16.7,
     "source_frames": 84,
-    "bytes": 389591
+    "bytes": 384645
   },
   {
     "file": "02-crop.gif",
@@ -13,7 +13,7 @@
     "language": "en",
     "duration_seconds": 6.4,
     "source_frames": 14,
-    "bytes": 309240
+    "bytes": 304198
   },
   {
     "file": "03-detail.gif",
@@ -21,7 +21,7 @@
     "language": "en",
     "duration_seconds": 8.2,
     "source_frames": 15,
-    "bytes": 313529
+    "bytes": 302861
   },
   {
     "file": "04-text.gif",
@@ -29,7 +29,7 @@
     "language": "en",
     "duration_seconds": 9.35,
     "source_frames": 8,
-    "bytes": 251250
+    "bytes": 239762
   },
   {
     "file": "05-style.gif",
@@ -37,7 +37,7 @@
     "language": "en",
     "duration_seconds": 7.5,
     "source_frames": 5,
-    "bytes": 274236
+    "bytes": 283480
   },
   {
     "file": "06-effects.gif",
@@ -45,7 +45,7 @@
     "language": "en",
     "duration_seconds": 7.5,
     "source_frames": 8,
-    "bytes": 207059
+    "bytes": 205431
   },
   {
     "file": "07-layers.gif",
@@ -53,7 +53,7 @@
     "language": "en",
     "duration_seconds": 13.54,
     "source_frames": 22,
-    "bytes": 414839
+    "bytes": 411340
   },
   {
     "file": "08-groups.gif",
@@ -61,7 +61,7 @@
     "language": "en",
     "duration_seconds": 8.3,
     "source_frames": 6,
-    "bytes": 265832
+    "bytes": 267472
   },
   {
     "file": "09-precision.gif",
@@ -69,7 +69,7 @@
     "language": "en",
     "duration_seconds": 6.45,
     "source_frames": 16,
-    "bytes": 250735
+    "bytes": 245887
   },
   {
     "file": "10-snapping.gif",
@@ -77,7 +77,7 @@
     "language": "en",
     "duration_seconds": 6.16,
     "source_frames": 15,
-    "bytes": 254744
+    "bytes": 254086
   },
   {
     "file": "11-workspace.gif",
@@ -85,15 +85,15 @@
     "language": "en",
     "duration_seconds": 5.86,
     "source_frames": 18,
-    "bytes": 661312
+    "bytes": 689063
   },
   {
     "file": "12-projects.gif",
-    "title": "Save the edit. Not just the pixels.",
+    "title": "Your edits, saved automatically.",
     "language": "en",
-    "duration_seconds": 8.5,
-    "source_frames": 5,
-    "bytes": 294570
+    "duration_seconds": 7.1,
+    "source_frames": 4,
+    "bytes": 271270
   },
   {
     "file": "13-sharing.gif",
@@ -101,7 +101,7 @@
     "language": "en",
     "duration_seconds": 6.4,
     "source_frames": 4,
-    "bytes": 187595
+    "bytes": 188327
   },
   {
     "file": "14-history.gif",
@@ -109,7 +109,7 @@
     "language": "en",
     "duration_seconds": 6.2,
     "source_frames": 4,
-    "bytes": 272039
+    "bytes": 273786
   },
   {
     "file": "15-composition.gif",
@@ -117,7 +117,7 @@
     "language": "en",
     "duration_seconds": 7.6,
     "source_frames": 5,
-    "bytes": 315404
+    "bytes": 312176
   },
   {
     "file": "16-web-pages.gif",
@@ -125,7 +125,7 @@
     "language": "en",
     "duration_seconds": 12.5,
     "source_frames": 10,
-    "bytes": 422999
+    "bytes": 419685
   },
   {
     "file": "17-recovery.gif",
@@ -133,7 +133,7 @@
     "language": "en",
     "duration_seconds": 5.2,
     "source_frames": 3,
-    "bytes": 208439
+    "bytes": 211890
   },
   {
     "file": "18-appearance.gif",
@@ -141,15 +141,15 @@
     "language": "en",
     "duration_seconds": 6.9,
     "source_frames": 4,
-    "bytes": 287345
+    "bytes": 282718
   },
   {
     "file": "19-capture.gif",
-    "title": "From capture to canvas, in a few steps.",
+    "title": "Choose once. Start editing.",
     "language": "en",
-    "duration_seconds": 14.8,
-    "source_frames": 20,
-    "bytes": 536117
+    "duration_seconds": 12.8,
+    "source_frames": 18,
+    "bytes": 334930
   },
   {
     "file": "20-monitors.gif",
@@ -157,7 +157,7 @@
     "language": "en",
     "duration_seconds": 8.3,
     "source_frames": 15,
-    "bytes": 365143
+    "bytes": 362511
   },
   {
     "file": "21-tray.gif",
@@ -165,7 +165,7 @@
     "language": "en",
     "duration_seconds": 7.1,
     "source_frames": 4,
-    "bytes": 115691
+    "bytes": 101511
   },
   {
     "file": "22-object-actions.gif",
@@ -173,7 +173,7 @@
     "language": "en",
     "duration_seconds": 5.0,
     "source_frames": 3,
-    "bytes": 195221
+    "bytes": 190010
   },
   {
     "file": "23-layer-space.gif",
@@ -181,6 +181,6 @@
     "language": "en",
     "duration_seconds": 7.54,
     "source_frames": 16,
-    "bytes": 573975
+    "bytes": 709767
   }
 ]

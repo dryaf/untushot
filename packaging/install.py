@@ -20,6 +20,9 @@ LEGACY_APP = 'io.github.rustshot.Rustshot'
 PARENT = '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/'
 BINDING = '<Primary><Shift>x'
 SCHEMA = 'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding'
+HOST_GTK_ENV = ('GTK_PATH', 'GIO_MODULE_DIR', 'GIO_EXTRA_MODULES',
+                'GTK_EXE_PREFIX', 'GTK_DATA_PREFIX', 'GTK_IM_MODULE_FILE',
+                'GDK_PIXBUF_MODULE_FILE', 'GDK_PIXBUF_MODULEDIR', 'GI_TYPELIB_PATH')
 
 
 def atomic_write(path, content, mode=0o644):
@@ -155,14 +158,29 @@ class Desktop:
             raise RuntimeError('GNOME hat die Tastenkürzel nicht übernommen')
 
 
-def wrapper(binary):
+def wrapper(binary, *, legacy=0):
+    # GTK also resolves input-method and image loaders through these variables.
+    # Leaving the Snap caches/prefix behind can dlopen libraries from core20
+    # into the host process and abort with a GLIBC_PRIVATE symbol error.
+    clear = ' '.join(('GTK_PATH', 'GIO_MODULE_DIR') if legacy == 1 else HOST_GTK_ENV)
+    if legacy:
+        # Recognize both previous wrapper versions when migrating Rustshot.
+        begin, end = 'if [ -n "${SNAP-}" ]; then', 'fi'
+    else:
+        # VS Code terminals may drop SNAP while retaining Snap GTK paths.
+        # Detect the inherited paths as well as the marker; preserve custom
+        # host module settings in environments without Snap contamination.
+        paths = ':'.join('${' + key + '-}' for key in
+                         (*HOST_GTK_ENV, 'GSETTINGS_SCHEMA_DIR', 'XDG_DATA_DIRS'))
+        begin = 'case "${SNAP:+snap}:' + paths + '" in\n    snap:*|*/snap/*)'
+        end = '    ;;\nesac'
     return f'''#!/bin/sh
 # Use host GTK resources when launched from a Snap-based IDE.
-if [ -n "${{SNAP-}}" ]; then
-    unset GTK_PATH GIO_MODULE_DIR
+{begin}
+    unset {clear}
     export GSETTINGS_SCHEMA_DIR=/usr/share/glib-2.0/schemas
     export XDG_DATA_DIRS=/usr/local/share:/usr/share
-fi
+{end}
 exec {shlex.quote(str(binary))} "$@"
 '''
 
@@ -224,19 +242,45 @@ def start(launcher):
     log.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     with os.fdopen(fd, 'ab') as output:
-        subprocess.Popen([str(launcher), '--background'], stdin=subprocess.DEVNULL,
-                         stdout=output, stderr=output, start_new_session=True)
+        offset = os.fstat(output.fileno()).st_size
+        process = subprocess.Popen([str(launcher), '--background'], stdin=subprocess.DEVNULL,
+                                   stdout=output, stderr=output, start_new_session=True)
+    last_error = ''
+    running = False
     for _ in range(30):
         time.sleep(0.2)
-        result = subprocess.run([str(launcher), '--status'], capture_output=True, text=True, timeout=4)
+        code = process.poll()
+        if code is not None and code != 0:
+            # Only show diagnostics from this launch, not old log entries.
+            with log.open('rb') as output:
+                output.seek(offset)
+                details = output.read(8192).decode('utf-8', errors='replace').strip()
+            raise RuntimeError(f'UntuShot-Start fehlgeschlagen (Exitcode {code}). '
+                               f'Protokoll: {log}\n{details}')
+        try:
+            result = subprocess.run([str(launcher), '--status'], capture_output=True, text=True, timeout=4)
+        except subprocess.TimeoutExpired:
+            last_error = 'Statusabfrage antwortet nicht.'
+            continue
+        if result.returncode:
+            last_error = result.stderr.strip()
+            continue
         try:
             status = json.loads(result.stdout)
         except ValueError:
+            last_error = 'Ungültige Statusantwort: ' + result.stdout.strip()
             continue
+        if not isinstance(status, dict):
+            last_error = 'Ungültige Statusantwort: ' + result.stdout.strip()
+            continue
+        last_error = ''
+        running = bool(status.get('running'))
         if status.get('running') and status.get('tray_connected'):
             print('UntuShot läuft; Tray verbunden; Strg+Shift+X ist bereit.')
             return
-    raise RuntimeError(f'Tray wurde nicht bestätigt. Ubuntu-AppIndicators prüfen; Protokoll: {log}')
+    if running and not last_error:
+        raise RuntimeError(f'UntuShot läuft, aber das Tray wurde nicht bestätigt. Ubuntu-AppIndicators prüfen; Protokoll: {log}')
+    raise RuntimeError(f'UntuShot-Hintergrundprozess wurde nicht bestätigt. Protokoll: {log}\n{last_error}')
 
 
 def integrate(prefix):
@@ -302,7 +346,8 @@ def legacy_owned(prefix):
     desktop = prefix / f'share/applications/{LEGACY_APP}.desktop'
     if not launcher.is_file() or not desktop.is_file():
         return False
-    return (launcher.read_text(errors='replace') == wrapper(prefix / 'libexec/rustshot')
+    return (launcher.read_text(errors='replace') in
+            (wrapper(prefix / 'libexec/rustshot', legacy=version) for version in (0, 1, 2))
             and f'Icon={LEGACY_APP}' in desktop.read_text()
             and f'Exec={desktop_quote(launcher)} -- %f' in desktop.read_text())
 
