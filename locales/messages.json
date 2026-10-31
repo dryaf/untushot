@@ -154,11 +154,6 @@
     "fr": "Taille du texte · {} px",
     "es": "Tamaño de texto · {} px"
   },
-  "Vorschau 75 % · Größen in Bildpixeln": {
-    "en": "Preview at 75% · Sizes in image pixels",
-    "fr": "Aperçu à 75 % · Tailles en pixels de l’image",
-    "es": "Vista previa al 75 % · Tamaños en píxeles de la imagen"
-  },
   "Sample": {
     "en": "Sample",
     "fr": "Exemple",
@@ -2058,5 +2053,10 @@
     "en": "Cancel the current capture",
     "fr": "Annuler la capture en cours",
     "es": "Cancelar la captura actual"
+  },
+  "Vorschau {:.0} % · Größen in Bildpixeln": {
+    "en": "Preview {:.0}% · Sizes in image pixels",
+    "fr": "Aperçu {:.0} % · Tailles en pixels de l’image",
+    "es": "Vista previa {:.0} % · Tamaños en píxeles de imagen"
   }
 }

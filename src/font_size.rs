@@ -26,8 +26,16 @@ pub fn chooser(size: &gtk::SpinButton) -> gtk::MenuButton {
     title.set_xalign(0.);
     title.style_context().add_class("caption");
     root.pack_start(&title, false, false, 0);
-    let hint = gtk::Label::new(Some(crate::i18n::tr(
-        "Vorschau 75 % · Größen in Bildpixeln",
+    // Font metrics vary across desktop themes and distributions. Use one common
+    // scale for every preset, fitting even the largest translated sample.
+    let mut preview_font = pango::FontDescription::from_string("sans-serif Bold");
+    preview_font.set_absolute_size(96. * 0.75 * f64::from(pango::SCALE));
+    let layout = button.create_pango_layout(Some(crate::i18n::tr("Sample")));
+    layout.set_font_description(Some(&preview_font));
+    let preview_scale = 0.75 * (250. / f64::from(layout.pixel_size().0.max(1))).min(1.);
+    let hint = gtk::Label::new(Some(&crate::i18n::format!(
+        "Vorschau {:.0} % · Größen in Bildpixeln",
+        preview_scale * 100.
     )));
     hint.set_xalign(0.);
     hint.style_context().add_class("muted");
@@ -51,7 +59,7 @@ pub fn chooser(size: &gtk::SpinButton) -> gtk::MenuButton {
         let sample = gtk::Label::new(Some(crate::i18n::tr("Sample")));
         sample.set_xalign(0.);
         let mut font = pango::FontDescription::from_string("sans-serif Bold");
-        font.set_absolute_size(f64::from(value) * 0.75 * f64::from(pango::SCALE));
+        font.set_absolute_size(f64::from(value) * preview_scale * f64::from(pango::SCALE));
         let attributes = pango::AttrList::new();
         attributes.insert(pango::AttrFontDesc::new(&font));
         sample.set_attributes(Some(&attributes));

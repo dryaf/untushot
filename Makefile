@@ -2,7 +2,7 @@ PREFIX ?= $(HOME)/.local
 PYTHON ?= /usr/bin/python3
 DESKTOP_INTEGRATION ?= auto
 
-.PHONY: build test test-clipboard test-ux test-languages showcase audit install desktop-install uninstall
+.PHONY: build test test-clipboard test-ux test-languages showcase package audit install desktop-install uninstall
 build:
 	cargo build --release --locked
 
@@ -25,6 +25,9 @@ test-languages:
 
 showcase:
 	$(PYTHON) tools/render_showcase.py --record
+
+package:
+	$(PYTHON) tools/package.py
 
 audit:
 	$(PYTHON) tools/verify_backports.py

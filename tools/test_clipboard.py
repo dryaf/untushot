@@ -12,6 +12,7 @@ import time
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--suite', choices=('clipboard', 'editor', 'layers', 'showcase', 'localization'), default='clipboard')
+    parser.add_argument('--release', action='store_true', help='Test optimized release builds')
     parser.add_argument('--language', choices=('en', 'de', 'fr', 'es'))
     args = parser.parse_args()
     suite = args.suite
@@ -44,7 +45,7 @@ def main():
                     if server.poll() is not None or time.monotonic() > deadline:
                         raise SystemExit('Private test display unavailable: ' + log.read_text())
                     time.sleep(0.02)
-                return subprocess.run(['cargo', 'test', '--locked', '--offline', test,
+                return subprocess.run(['cargo', 'test', *(['--release'] if args.release else []), '--locked', '--offline', test,
                                        '--', '--ignored', '--test-threads=1'],
                                       env=env, cwd=root, timeout=600 if suite == 'showcase' else 180, check=False).returncode
             finally:

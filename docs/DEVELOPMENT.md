@@ -194,3 +194,49 @@ rendered output when you intend to share only the visible result.
 
 The [preserved German reference](handbook-de.md) contains the earlier detailed
 workflow descriptions and historical acceptance notes.
+
+## Release packages
+
+The public repository is [dryaf/untushot](https://github.com/dryaf/untushot).
+Build the amd64 Debian package and x86-64 AppImage with:
+
+```sh
+python3 tools/package.py             # Podman, or Docker if Podman is unavailable
+python3 tools/package.py --engine docker
+```
+
+This builds an Ubuntu 22.04 container using `packaging/Containerfile`, mounts the
+active Rust toolchain and cached Cargo registry read-only, and writes to
+`target/packages/` and `dist/`. Rust 1.75.0 is used for release builds. The host's
+installed application, clipboard and desktop settings are not changed.
+
+The builder compiles the optimized application, runs Rust/security tests and the
+four-language, editor, layer and clipboard GTK checks, then generates both
+packages. `tools/verify_release.py` verifies their hashes, architecture, version,
+language selection and GUI startup on a private Broadway display. The AppImage
+can be extracted for these checks without FUSE. `--skip-checks` still compiles and
+checks the packaged binaries, but skips repeating the application test suites.
+
+Native dependencies are determined with `dpkg-shlibdeps`. The AppImage bundles
+GTK resources and its dynamically loaded AppIndicator library, with native and
+Rust third-party notices. The GTK deployment hook is adjusted to preserve the
+selected display backend, including Wayland. Its bundled Adwaita theme follows
+the desktop's light/dark preference; the Debian package uses system GTK themes.
+
+The container base, linuxdeploy, GTK helper and AppImage runtime are pinned;
+downloads are checked against `packaging/tools.lock.json`. Ubuntu package updates
+are applied during container creation. This is a repeatable packaging process,
+not a claim of bit-for-bit reproducible binaries. `build-info.json` records the
+source commit, dirty-tree flag, toolchain, native package versions and tool checksums.
+
+To publish a new stable version:
+
+1. Update the Cargo package version, lockfile, download examples and
+   `docs/releases/v<VERSION>.md`.
+2. Commit and push the changes, then create and push the matching `v<VERSION>` tag.
+3. Run **Build and publish release** in GitHub Actions with that existing tag.
+
+The workflow builds and tests before creating a draft release with the packages,
+checksums and build information. It publishes only after uploading the assets,
+and refuses to replace an existing release. GitHub supplies source archives for
+the tag. Release checksums are integrity checks; no signing key is configured.

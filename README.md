@@ -29,6 +29,29 @@ borders and shadows remain editable in a `.untushot` project.
 
 ## Get started
 
+Download the [latest release](https://github.com/dryaf/untushot/releases/latest).
+Prebuilt packages are available for **x86-64 / amd64**:
+
+| Package | Runtime |
+| --- | --- |
+| `.deb` | Ubuntu 22.04+ / Debian 12+; GTK supplied by your distribution |
+| `.AppImage` | Linux with glibc 2.35+; bundled GTK and Adwaita theme |
+
+```sh
+# Debian / Ubuntu package
+sudo apt install ./untushot_0.8.1_amd64.deb
+
+# Portable AppImage
+chmod +x UntuShot-0.8.1-x86_64.AppImage
+./UntuShot-0.8.1-x86_64.AppImage
+```
+
+Without FUSE, prefix the AppImage command with `APPIMAGE_EXTRACT_AND_RUN=1`.
+The release includes `SHA256SUMS` and build information. See the
+[release notes](docs/releases/v0.8.1.md) for installation details.
+
+### Build from source
+
 Requires **Rust 1.75+**, **GTK 3.24+** development files and `pkg-config`.
 On Debian or Ubuntu:
 
