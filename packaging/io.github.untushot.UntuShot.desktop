@@ -1,0 +1,37 @@
+[Desktop Entry]
+Type=Application
+Name=UntuShot
+Comment=Capture and annotate Wayland screenshots
+Comment[de]=Wayland-Screenshots aufnehmen und beschriften
+Comment[fr]=Capturer et annoter des captures d’écran Wayland
+Comment[es]=Capturar y anotar capturas de pantalla Wayland
+Exec="untushot" -- %f
+MimeType=image/png;image/jpeg;
+Icon=io.github.untushot.UntuShot
+Terminal=false
+Categories=Graphics;Utility;
+Keywords=screenshot;capture;annotation;wayland;
+StartupNotify=true
+StartupWMClass=io.github.untushot.UntuShot
+Actions=Area;DelayedArea;Full;
+
+[Desktop Action Area]
+Name=Select region
+Name[de]=Bereich auswählen
+Name[fr]=Sélectionner une zone
+Name[es]=Seleccionar región
+Exec="untushot" --capture region
+
+[Desktop Action DelayedArea]
+Name=Select region · 3 seconds
+Name[de]=Bereich auswählen · 3 Sekunden
+Name[fr]=Sélectionner une zone · 3 secondes
+Name[es]=Seleccionar región · 3 segundos
+Exec="untushot" --capture region --delay 3
+
+[Desktop Action Full]
+Name=Entire screen
+Name[de]=Ganzer Bildschirm
+Name[fr]=Écran entier
+Name[es]=Pantalla completa
+Exec="untushot" --capture full

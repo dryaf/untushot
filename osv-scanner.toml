@@ -1,0 +1,7 @@
+# Version-only scanners cannot identify this source-level GTK3 backport.
+# make audit first verifies that Cargo uses our reviewed, hash-checked sources.
+# This exception also covers the alias GHSA-wrw7-89jp-8q8g, not other GLib issues.
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0429"
+ignoreUntil = 2027-01-31
+reason = "Official VariantStrIter fix backported to vendor/glib/src/variant_iter.rs (&mut out-pointer); verified by tools/verify_backports.py and tests/security.rs in debug and release. See vendor/README.md. Remove this exception with the GTK4 migration."

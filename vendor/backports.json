@@ -1,0 +1,36 @@
+{
+  "packages": {
+    "glib": {
+      "version": "0.18.5",
+      "crates_io_archive_sha256": "233daaf6e83ae6a12a52055f568f9d7cf4671dabb78ff9560ab6da230ce00ee5"
+    },
+    "glib-macros": {
+      "version": "0.18.5",
+      "crates_io_archive_sha256": "0bb0228f477c0900c880fd78c8759b95c7636dbd7842707f49e132378aa2acdc"
+    },
+    "gtk3-macros": {
+      "version": "0.18.0",
+      "crates_io_archive_sha256": "c6063efb63db582968fb7df72e1ae68aa6360dcfb0a75143f34fc7d616bad75e"
+    }
+  },
+  "modified_files_sha256": {
+    "vendor/glib/src/variant_iter.rs": "a0f5ee8acb8faa089bcdfbc9a57372609fce7654026ccef7d9a224d05a654ccc",
+    "vendor/glib-macros/Cargo.toml": "f75de730d1675d3cb07b32ba65404956b2e7d9f9495940ef3964c906435ac477",
+    "vendor/glib-macros/src/boxed_derive.rs": "5c2830dc9c1c0b21504940f348679ba5edd3e1d51973c4c0a32239bc9d915059",
+    "vendor/glib-macros/src/closure.rs": "2b92b0d59286477b53ee3517510a173c013467280d66f10339bde62ca1f7718f",
+    "vendor/glib-macros/src/derived_properties_attribute.rs": "dbe6e7493d54a8074acd97904ed2ea13ebae7bd6cca2fdb32007ae3893417f59",
+    "vendor/glib-macros/src/diagnostics.rs": "56d4d94b662bc0ee0805b451dd0ad6017f2cce55f750084b00bb9ba239801ddf",
+    "vendor/glib-macros/src/enum_derive.rs": "6d46a5026dd990e2724ce2846fde3d4fa049385345ed8fa62ab3287d61341ab3",
+    "vendor/glib-macros/src/error_domain_derive.rs": "80e1ea5445f78ca654809e86b46a27a831fe4659a4bc0ba5d4594ee02d74930e",
+    "vendor/glib-macros/src/flags_attribute.rs": "6aaa8ea8c80caa96589524c577b26db0ff22b422757bba633bd3f59dc46ec71c",
+    "vendor/glib-macros/src/lib.rs": "12112ce3d60ff797850ce5b99bc5a2db0fb638284c22ff64fa0a050e6b5b2220",
+    "vendor/glib-macros/src/object_interface_attribute.rs": "100deeda6757c23744e9543a60312ff0ad218d5ebc5f2fc890e19dd45bac9557",
+    "vendor/glib-macros/src/object_subclass_attribute.rs": "b9752b7768f9b1852dd5c4a0434bc345d35e31f6afe0b0df7d14318c4cf79184",
+    "vendor/glib-macros/src/shared_boxed_derive.rs": "71440d8d3a6df439a59d23f4e8fc3333a66dd26dcb00c0a9c9048dc6121a1c70",
+    "vendor/glib-macros/src/variant_derive.rs": "f99f237eac22c26bd37ef4c0bd3f372cd7666cd11be1651a8ceb25499423d14b",
+    "vendor/gtk3-macros/Cargo.toml": "df0161c727bac02ab0e9c25ff00e47af855370f99695f181362c42f5ec953fd2",
+    "vendor/gtk3-macros/src/composite_template_derive.rs": "e49c1e1d350ff8a77496804a6886aae4bf5e399c9a84114b5d83cde05235ca2c",
+    "vendor/gtk3-macros/src/diagnostics.rs": "56d4d94b662bc0ee0805b451dd0ad6017f2cce55f750084b00bb9ba239801ddf",
+    "vendor/gtk3-macros/src/lib.rs": "628cd92590440b6097b8bf23625e2b1a6a7fb48b1c617afe7cad2122a57124d2"
+  }
+}

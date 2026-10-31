@@ -1,0 +1,50 @@
+/* Layout only: native GTK/Yaru owns controls, fonts, contrast and accent colours.
+ * Scope application-specific rules so dialogs and desktop menus keep their theme. */
+#untushot #contextbar { border-bottom: 1px solid @borders; }
+#untushot #sidebar { border-right: 1px solid @borders; }
+#untushot #inspector { border-left: 1px solid @borders; }
+#untushot #regionbar { border-top: 1px solid @borders; background-color: @theme_bg_color; }
+#untushot .hero { font-size: 1.8em; font-weight: bold; }
+#untushot .caption { font-size: 0.9em; font-weight: bold; opacity: 0.75; }
+#untushot .muted, #untushot #status { opacity: 0.75; }
+#untushot .small, #untushot .shortcut { font-size: 0.9em; }
+#untushot .shortcut { opacity: 0.6; }
+#untushot .card-title { font-weight: bold; }
+#untushot button.capture-card { padding: 16px 14px; border-radius: 12px; }
+#untushot #inspector list { border: 1px solid @borders; border-radius: 6px; }
+
+/* Quiet surfaces, with the system accent reserved for selection and primary actions. */
+#untushot #contextbar { padding: 2px; }
+#untushot #footer { border-top: 1px solid @borders; }
+#untushot #footer .error { color: @error_color; }
+#untushot #sidebar button.tool-button { border-radius: 8px; padding: 4px 8px; min-height: 24px; }
+#untushot button.icon-control { min-width: 24px; min-height: 24px; padding: 4px; }
+#untushot button.file-action { padding: 6px 10px; border-radius: 6px; }
+#untushot #sidebar button.tool-button:checked {
+    background-image: none;
+    background-color: alpha(@theme_selected_bg_color, 0.18);
+    border-color: alpha(@theme_selected_bg_color, 0.45);
+    color: @theme_fg_color;
+    box-shadow: none;
+}
+#untushot button.capture-card:checked {
+    border-color: @theme_selected_bg_color;
+    box-shadow: inset 0 0 0 1px @theme_selected_bg_color;
+}
+#untushot .source-card {
+    background-color: @theme_base_color;
+    border: 1px solid @borders;
+    border-radius: 12px;
+    padding: 16px;
+}
+#untushot #inspector list { background-color: transparent; border: none; }
+#untushot #inspector row { border-radius: 8px; margin: 2px 0; }
+#untushot #history { border-top: 1px solid @borders; }
+#untushot #history button.thumbnail { border-radius: 8px; padding: 6px; }
+#untushot #history button.thumbnail:hover { background-color: alpha(@theme_selected_bg_color, 0.12); }
+#untushot button.stroke-choice { border-radius: 8px; padding: 6px; }
+#untushot button.stroke-choice:checked {
+    background-image: none;
+    background-color: alpha(@theme_selected_bg_color, 0.18);
+    border-color: @theme_selected_bg_color;
+}

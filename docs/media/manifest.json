@@ -1,0 +1,186 @@
+[
+  {
+    "file": "01-annotate.gif",
+    "title": "Make the important part impossible to miss.",
+    "language": "en",
+    "duration_seconds": 16.7,
+    "source_frames": 84,
+    "bytes": 389591
+  },
+  {
+    "file": "02-crop.gif",
+    "title": "Choose exactly what you want to share.",
+    "language": "en",
+    "duration_seconds": 6.4,
+    "source_frames": 14,
+    "bytes": 309240
+  },
+  {
+    "file": "03-detail.gif",
+    "title": "Lift a detail. Give it room to shine.",
+    "language": "en",
+    "duration_seconds": 8.2,
+    "source_frames": 15,
+    "bytes": 313529
+  },
+  {
+    "file": "04-text.gif",
+    "title": "Edit the words. Keep your place.",
+    "language": "en",
+    "duration_seconds": 9.35,
+    "source_frames": 8,
+    "bytes": 251250
+  },
+  {
+    "file": "05-style.gif",
+    "title": "Your colors. Your line weight.",
+    "language": "en",
+    "duration_seconds": 7.5,
+    "source_frames": 5,
+    "bytes": 274236
+  },
+  {
+    "file": "06-effects.gif",
+    "title": "A little depth. A lot more clarity.",
+    "language": "en",
+    "duration_seconds": 7.5,
+    "source_frames": 8,
+    "bytes": 207059
+  },
+  {
+    "file": "07-layers.gif",
+    "title": "Every mark is a layer. Every layer is yours.",
+    "language": "en",
+    "duration_seconds": 13.54,
+    "source_frames": 22,
+    "bytes": 414839
+  },
+  {
+    "file": "08-groups.gif",
+    "title": "Move and align objects together.",
+    "language": "en",
+    "duration_seconds": 8.3,
+    "source_frames": 6,
+    "bytes": 265832
+  },
+  {
+    "file": "09-precision.gif",
+    "title": "Place it exactly where you mean.",
+    "language": "en",
+    "duration_seconds": 6.45,
+    "source_frames": 16,
+    "bytes": 250735
+  },
+  {
+    "file": "10-snapping.gif",
+    "title": "Let the guides do the lining up.",
+    "language": "en",
+    "duration_seconds": 6.16,
+    "source_frames": 15,
+    "bytes": 254744
+  },
+  {
+    "file": "11-workspace.gif",
+    "title": "Room to work. Precision when you need it.",
+    "language": "en",
+    "duration_seconds": 5.86,
+    "source_frames": 18,
+    "bytes": 661312
+  },
+  {
+    "file": "12-projects.gif",
+    "title": "Save the edit. Not just the pixels.",
+    "language": "en",
+    "duration_seconds": 8.5,
+    "source_frames": 5,
+    "bytes": 294570
+  },
+  {
+    "file": "13-sharing.gif",
+    "title": "Ready to share. Easy to keep editing.",
+    "language": "en",
+    "duration_seconds": 6.4,
+    "source_frames": 4,
+    "bytes": 187595
+  },
+  {
+    "file": "14-history.gif",
+    "title": "Your recent captures, within reach.",
+    "language": "en",
+    "duration_seconds": 6.2,
+    "source_frames": 4,
+    "bytes": 272039
+  },
+  {
+    "file": "15-composition.gif",
+    "title": "Put the whole story in one image.",
+    "language": "en",
+    "duration_seconds": 7.6,
+    "source_frames": 5,
+    "bytes": 315404
+  },
+  {
+    "file": "16-web-pages.gif",
+    "title": "Long page. Complete picture.",
+    "language": "en",
+    "duration_seconds": 12.5,
+    "source_frames": 10,
+    "bytes": 422999
+  },
+  {
+    "file": "17-recovery.gif",
+    "title": "Your session has a second chance.",
+    "language": "en",
+    "duration_seconds": 5.2,
+    "source_frames": 3,
+    "bytes": 208439
+  },
+  {
+    "file": "18-appearance.gif",
+    "title": "At home on your desktop.",
+    "language": "en",
+    "duration_seconds": 6.9,
+    "source_frames": 4,
+    "bytes": 287345
+  },
+  {
+    "file": "19-capture.gif",
+    "title": "From capture to canvas, in a few steps.",
+    "language": "en",
+    "duration_seconds": 14.8,
+    "source_frames": 20,
+    "bytes": 536117
+  },
+  {
+    "file": "20-monitors.gif",
+    "title": "One canvas. More than one display.",
+    "language": "en",
+    "duration_seconds": 8.3,
+    "source_frames": 15,
+    "bytes": 365143
+  },
+  {
+    "file": "21-tray.gif",
+    "title": "Capture again without reopening the editor.",
+    "language": "en",
+    "duration_seconds": 7.1,
+    "source_frames": 4,
+    "bytes": 115691
+  },
+  {
+    "file": "22-object-actions.gif",
+    "title": "The right action, right at the object.",
+    "language": "en",
+    "duration_seconds": 5.0,
+    "source_frames": 3,
+    "bytes": 195221
+  },
+  {
+    "file": "23-layer-space.gif",
+    "title": "Keep the controls. Scroll the layers.",
+    "language": "en",
+    "duration_seconds": 7.54,
+    "source_frames": 16,
+    "bytes": 573975
+  }
+]

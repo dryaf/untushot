@@ -1,0 +1,37 @@
+[package]
+name = "untushot"
+version = "0.8.1"
+edition = "2021"
+rust-version = "1.75"
+description = "A native Wayland screenshot editor with a multi-monitor canvas"
+license = "MIT"
+
+[dependencies]
+untushot-i18n-macros = { path = "i18n-macros" }
+anyhow = "1.0.103"
+clap = { version = "=4.5.20", features = ["derive"] }
+gtk = { version = "0.18", features = ["v3_24"] }
+gdk = "0.18"
+gdk-pixbuf = "0.18"
+gio = "0.18"
+glib = "0.18"
+cairo-rs = { version = "0.18", features = ["png"] }
+tempfile = "3.10"
+futures-channel = "0.3"
+futures-util = "0.3"
+image = { version = "0.24.9", default-features = false, features = ["png", "jpeg"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+libc = "0.2"
+
+[profile.release]
+lto = "thin"
+strip = true
+
+
+# GTK3-compatible security backport; provenance and exact changes: vendor/README.md
+[patch.crates-io]
+glib = { path = "vendor/glib" }
+glib-macros = { path = "vendor/glib-macros" }
+gtk3-macros = { path = "vendor/gtk3-macros" }

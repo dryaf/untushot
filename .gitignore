@@ -1,0 +1,17 @@
+/target/
+*.png
+!assets/*.png
+
+__pycache__/
+
+# Release artifacts and local-only configuration
+/dist/
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+*.deb
+*.AppImage
+*.untushot
+*.rustshot

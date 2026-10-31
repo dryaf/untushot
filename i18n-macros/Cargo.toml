@@ -1,0 +1,13 @@
+[package]
+name = "untushot-i18n-macros"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+publish = false
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+serde_json = "1"

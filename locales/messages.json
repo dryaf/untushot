@@ -1,0 +1,2062 @@
+{
+  "Aufnahme abgebrochen": {
+    "en": "Capture cancelled",
+    "fr": "Capture annulée",
+    "es": "Captura cancelada"
+  },
+  "Display": {
+    "en": "Display",
+    "fr": "Écran",
+    "es": "Pantalla"
+  },
+  "grim konnte nicht gestartet werden": {
+    "en": "Could not start grim",
+    "fr": "Impossible de démarrer grim",
+    "es": "No se pudo iniciar grim"
+  },
+  "Screenshot konnte nicht gelesen werden": {
+    "en": "Could not read the screenshot",
+    "fr": "Impossible de lire la capture",
+    "es": "No se pudo leer la captura"
+  },
+  "grim: Zeitüberschreitung nach 20 Sekunden": {
+    "en": "grim: timed out after 20 seconds",
+    "fr": "grim : délai de 20 secondes dépassé",
+    "es": "grim: tiempo de espera de 20 segundos agotado"
+  },
+  "Monitor-Anordnung hat sich geändert. Bitte Quelle prüfen und erneut aufnehmen.": {
+    "en": "Monitor layout changed. Check the source and capture again.",
+    "fr": "La disposition des écrans a changé. Vérifiez la source et relancez la capture.",
+    "es": "La disposición de las pantallas cambió. Comprueba la fuente y repite la captura."
+  },
+  "Monitor-Anordnung hat sich während der Aufnahme geändert. Bitte erneut aufnehmen.": {
+    "en": "Monitor layout changed during capture. Please try again.",
+    "fr": "La disposition des écrans a changé pendant la capture. Réessayez.",
+    "es": "La disposición de las pantallas cambió durante la captura. Inténtalo de nuevo."
+  },
+  "grim lieferte kein Bild": {
+    "en": "grim returned no image",
+    "fr": "grim n’a renvoyé aucune image",
+    "es": "grim no devolvió ninguna imagen"
+  },
+  "Monitor-Geometrie hat sich während der Aufnahme geändert. Bitte erneut aufnehmen.": {
+    "en": "Monitor geometry changed during capture. Please try again.",
+    "fr": "La géométrie des écrans a changé pendant la capture. Réessayez.",
+    "es": "La geometría de las pantallas cambió durante la captura. Inténtalo de nuevo."
+  },
+  "Alle Monitore · grim": {
+    "en": "All monitors · grim",
+    "fr": "Tous les écrans · grim",
+    "es": "Todas las pantallas · grim"
+  },
+  "Keine Monitor-Geometrie verfügbar": {
+    "en": "Monitor geometry unavailable",
+    "fr": "Géométrie des écrans indisponible",
+    "es": "Geometría de las pantallas no disponible"
+  },
+  "Desktop-Portal · Bildumfang vom Desktop bestimmt; monitorübergreifende Auswahl im gelieferten Bild möglich": {
+    "en": "Desktop portal · Image area determined by the desktop; selections can span monitors within the image",
+    "fr": "Portail du bureau · Zone définie par le bureau ; la sélection peut couvrir plusieurs écrans dans l’image",
+    "es": "Portal del escritorio · El escritorio determina el área; la selección puede abarcar varias pantallas en la imagen"
+  },
+  "Kein Session-D-Bus erreichbar": {
+    "en": "Cannot connect to the session D-Bus",
+    "fr": "Connexion au bus D-Bus de session impossible",
+    "es": "No se puede conectar al D-Bus de la sesión"
+  },
+  "D-Bus ohne eindeutigen Namen": {
+    "en": "D-Bus has no unique name",
+    "fr": "D-Bus n’a pas de nom unique",
+    "es": "D-Bus no tiene un nombre único"
+  },
+  "Screenshot-Portal nicht verfügbar. Passendes xdg-desktop-portal-Backend installieren oder --backend grim verwenden.": {
+    "en": "Screenshot portal unavailable. Install the matching xdg-desktop-portal backend or use --backend grim.",
+    "fr": "Portail de capture indisponible. Installez le backend xdg-desktop-portal adapté ou utilisez --backend grim.",
+    "es": "Portal de capturas no disponible. Instala el backend xdg-desktop-portal adecuado o usa --backend grim."
+  },
+  "Portal verwendet einen unerwarteten Request-Pfad: {returned}": {
+    "en": "Portal returned an unexpected request path: {returned}",
+    "fr": "Le portail a renvoyé un chemin de requête inattendu : {returned}",
+    "es": "El portal devolvió una ruta de solicitud inesperada: {returned}"
+  },
+  "Screenshot-Freigabe nach 120 Sekunden abgelaufen": {
+    "en": "Screenshot permission timed out after 120 seconds",
+    "fr": "Autorisation de capture expirée après 120 secondes",
+    "es": "El permiso de captura caducó tras 120 segundos"
+  },
+  "Ungültige Portal-Antwort": {
+    "en": "Invalid portal response",
+    "fr": "Réponse du portail invalide",
+    "es": "Respuesta del portal no válida"
+  },
+  "Screenshot abgebrochen": {
+    "en": "Screenshot cancelled",
+    "fr": "Capture d’écran annulée",
+    "es": "Captura de pantalla cancelada"
+  },
+  "Desktop-Portal hat die Aufnahme abgelehnt": {
+    "en": "Desktop portal denied the capture",
+    "fr": "Le portail du bureau a refusé la capture",
+    "es": "El portal del escritorio rechazó la captura"
+  },
+  "Portal lieferte keine Bild-URI": {
+    "en": "Portal returned no image URI",
+    "fr": "Le portail n’a renvoyé aucune URI d’image",
+    "es": "El portal no devolvió ninguna URI de imagen"
+  },
+  "Portal lieferte keine lokale Datei": {
+    "en": "Portal returned no local file",
+    "fr": "Le portail n’a renvoyé aucun fichier local",
+    "es": "El portal no devolvió ningún archivo local"
+  },
+  "Portal-Screenshot konnte nicht geöffnet werden": {
+    "en": "Could not open the portal screenshot",
+    "fr": "Impossible d’ouvrir la capture du portail",
+    "es": "No se pudo abrir la captura del portal"
+  },
+  "Für das Tray-Symbol fehlt libayatana-appindicator3-1": {
+    "en": "The tray icon requires libayatana-appindicator3-1",
+    "fr": "L’icône de notification nécessite libayatana-appindicator3-1",
+    "es": "El icono de la bandeja requiere libayatana-appindicator3-1"
+  },
+  "Unvollständige AppIndicator-Bibliothek": {
+    "en": "Incomplete AppIndicator library",
+    "fr": "Bibliothèque AppIndicator incomplète",
+    "es": "Biblioteca AppIndicator incompleta"
+  },
+  "Tray-Symbol konnte nicht erstellt werden": {
+    "en": "Could not create the tray icon",
+    "fr": "Impossible de créer l’icône de notification",
+    "es": "No se pudo crear el icono de la bandeja"
+  },
+  "Keine Desktop-Sitzung verfügbar": {
+    "en": "No desktop session available",
+    "fr": "Aucune session de bureau disponible",
+    "es": "No hay ninguna sesión de escritorio disponible"
+  },
+  "Ungültige Werkzeugeinstellungen": {
+    "en": "Invalid tool settings",
+    "fr": "Réglages des outils invalides",
+    "es": "Ajustes de herramientas no válidos"
+  },
+  "Kein Einstellungsverzeichnis": {
+    "en": "No settings directory",
+    "fr": "Aucun dossier de réglages",
+    "es": "No hay directorio de ajustes"
+  },
+  "Schriftgröße auswählen · Sample-Vorschau": {
+    "en": "Choose font size · Sample preview",
+    "fr": "Choisir la taille du texte · Aperçu",
+    "es": "Elegir tamaño de texto · Vista previa"
+  },
+  "Schriftgröße · {} px": {
+    "en": "Font size · {} px",
+    "fr": "Taille du texte · {} px",
+    "es": "Tamaño de texto · {} px"
+  },
+  "Vorschau 75 % · Größen in Bildpixeln": {
+    "en": "Preview at 75% · Sizes in image pixels",
+    "fr": "Aperçu à 75 % · Tailles en pixels de l’image",
+    "es": "Vista previa al 75 % · Tamaños en píxeles de la imagen"
+  },
+  "Sample": {
+    "en": "Sample",
+    "fr": "Exemple",
+    "es": "Ejemplo"
+  },
+  "sans-serif Bold": {
+    "en": "sans-serif Bold",
+    "fr": "sans-serif Bold",
+    "es": "sans-serif Bold"
+  },
+  "Pictures": {
+    "en": "Pictures",
+    "fr": "Pictures",
+    "es": "Pictures"
+  },
+  "Screenshots": {
+    "en": "Screenshots",
+    "fr": "Captures",
+    "es": "Capturas"
+  },
+  "Datei wurde während des Lesens geändert": {
+    "en": "File changed while reading",
+    "fr": "Le fichier a changé pendant la lecture",
+    "es": "El archivo cambió durante la lectura"
+  },
+  "Screenshot-Verlauf ein-/ausklappen": {
+    "en": "Expand or collapse screenshot history",
+    "fr": "Afficher ou masquer l’historique des captures",
+    "es": "Mostrar u ocultar el historial de capturas"
+  },
+  "Noch keine Screenshots": {
+    "en": "No screenshots yet",
+    "fr": "Aucune capture pour le moment",
+    "es": "Aún no hay capturas"
+  },
+  "Ordner öffnen": {
+    "en": "Open folder",
+    "fr": "Ouvrir le dossier",
+    "es": "Abrir carpeta"
+  },
+  "Ordner: {e}": {
+    "en": "Folder: {e}",
+    "fr": "Dossier : {e}",
+    "es": "Carpeta: {e}"
+  },
+  "Im Editor öffnen": {
+    "en": "Open in editor",
+    "fr": "Ouvrir dans l’éditeur",
+    "es": "Abrir en el editor"
+  },
+  "Rechts an aktuelles Bild anfügen": {
+    "en": "Append to the right of the current image",
+    "fr": "Ajouter à droite de l’image actuelle",
+    "es": "Añadir a la derecha de la imagen actual"
+  },
+  "Ordner nicht lesbar": {
+    "en": "Cannot read folder",
+    "fr": "Impossible de lire le dossier",
+    "es": "No se puede leer la carpeta"
+  },
+  "{} zuletzt geänderte Bilder": {
+    "en": "{} recently modified images",
+    "fr": "{} images récemment modifiées",
+    "es": "{} imágenes modificadas recientemente"
+  },
+  "Die Zwischenablage antwortet nicht. Bitte erneut kopieren.": {
+    "en": "The clipboard is not responding. Please copy again.",
+    "fr": "Le presse-papiers ne répond pas. Copiez à nouveau.",
+    "es": "El portapapeles no responde. Vuelve a copiar."
+  },
+  "Kein PNG- oder JPEG-Bild in der Zwischenablage · Zuerst das Bild selbst kopieren": {
+    "en": "No PNG or JPEG image in the clipboard · Copy the image itself first",
+    "fr": "Aucune image PNG ou JPEG dans le presse-papiers · Copiez d’abord l’image elle-même",
+    "es": "No hay ninguna imagen PNG o JPEG en el portapapeles · Copia primero la propia imagen"
+  },
+  "Das Bild konnte nicht geladen werden. Bitte erneut kopieren.": {
+    "en": "Could not load the image. Please copy again.",
+    "fr": "Impossible de charger l’image. Copiez à nouveau.",
+    "es": "No se pudo cargar la imagen. Vuelve a copiar."
+  },
+  "Webseite übernehmen": {
+    "en": "Import web page",
+    "fr": "Importer une page web",
+    "es": "Importar página web"
+  },
+  "Bild aus Zwischenablage": {
+    "en": "Image from clipboard",
+    "fr": "Image du presse-papiers",
+    "es": "Imagen del portapapeles"
+  },
+  "Abbrechen": {
+    "en": "Cancel",
+    "fr": "Annuler",
+    "es": "Cancelar"
+  },
+  "Ganze Webseite aus deinem Browser": {
+    "en": "A full page from your browser",
+    "fr": "Une page entière depuis votre navigateur",
+    "es": "Una página completa de tu navegador"
+  },
+  "Vorschau prüfen und übernehmen": {
+    "en": "Review the preview and import",
+    "fr": "Vérifier l’aperçu et importer",
+    "es": "Revisar la vista previa e importar"
+  },
+  "1. In Firefox einen Rechtsklick auf eine freie Stelle der Seite machen und „Bildschirmfoto aufnehmen“ wählen.\n2. Die gesamte Seite auswählen und das Bild kopieren.\n3. Hier „Bild einfügen“ anklicken und die Vorschau prüfen.": {
+    "en": "1. In Firefox, right-click a blank area of the page and choose “Take Screenshot”.\n2. Select the entire page and copy the image.\n3. Click “Paste image” here and review the preview.",
+    "fr": "1. Dans Firefox, faites un clic droit sur une zone vide et choisissez « Effectuer une capture d’écran ».\n2. Sélectionnez la page entière et copiez l’image.\n3. Cliquez ici sur « Coller l’image » et vérifiez l’aperçu.",
+    "es": "1. En Firefox, haz clic derecho en una zona vacía y elige «Hacer captura de pantalla».\n2. Selecciona la página completa y copia la imagen.\n3. Pulsa aquí «Pegar imagen» y revisa la vista previa."
+  },
+  "Füge ein kopiertes Bild ein. Dein bisheriges Bild bleibt bis zum Übernehmen geöffnet.": {
+    "en": "Paste a copied image. Your current image stays open until you confirm.",
+    "fr": "Collez une image copiée. L’image actuelle reste ouverte jusqu’à confirmation.",
+    "es": "Pega una imagen copiada. La imagen actual permanece abierta hasta que confirmes."
+  },
+  "Nachladende Inhalte vorher im Browser laden. Der Browser erstellt die Aufnahme; UntuShot übernimmt das fertige Bild.": {
+    "en": "Load dynamic content in your browser first. The browser captures the page; UntuShot imports the resulting image.",
+    "fr": "Chargez d’abord le contenu dynamique dans le navigateur. Le navigateur capture la page ; UntuShot importe l’image obtenue.",
+    "es": "Carga primero el contenido dinámico en el navegador. El navegador captura la página; UntuShot importa la imagen resultante."
+  },
+  "Anleitung für Firefox": {
+    "en": "Firefox instructions",
+    "fr": "Instructions pour Firefox",
+    "es": "Instrucciones para Firefox"
+  },
+  "Bild einfügen": {
+    "en": "Paste image",
+    "fr": "Coller l’image",
+    "es": "Pegar imagen"
+  },
+  "Bild aus der Zwischenablage laden · Strg+V": {
+    "en": "Load an image from the clipboard · Ctrl+V",
+    "fr": "Charger une image du presse-papiers · Ctrl+V",
+    "es": "Cargar una imagen del portapapeles · Ctrl+V"
+  },
+  "Originalgröße prüfen; ausgeschaltet passt das Bild in die Breite. Lange Seiten lassen sich vertikal scrollen.": {
+    "en": "Check original size; when off, the image fits the width. Scroll vertically through long pages.",
+    "fr": "Vérifier la taille originale ; sinon, l’image s’adapte à la largeur. Les pages longues défilent verticalement.",
+    "es": "Ver el tamaño original; si se desactiva, la imagen se ajusta al ancho. Desplázate verticalmente por las páginas largas."
+  },
+  "Noch kein Bild eingefügt.": {
+    "en": "No image pasted yet.",
+    "fr": "Aucune image collée pour le moment.",
+    "es": "Aún no se ha pegado ninguna imagen."
+  },
+  "Bild wird geladen …": {
+    "en": "Loading image …",
+    "fr": "Chargement de l’image…",
+    "es": "Cargando imagen…"
+  },
+  "Die Zwischenablage antwortet nicht. Kopiere das Bild erneut und versuche es noch einmal.": {
+    "en": "The clipboard is not responding. Copy the image again and retry.",
+    "fr": "Le presse-papiers ne répond pas. Copiez à nouveau l’image et réessayez.",
+    "es": "El portapapeles no responde. Vuelve a copiar la imagen e inténtalo de nuevo."
+  },
+  "Kein PNG- oder JPEG-Bild in der Zwischenablage. Bitte das Bild selbst kopieren, nicht seine Adresse.": {
+    "en": "No PNG or JPEG image in the clipboard. Copy the image itself, not its address.",
+    "fr": "Aucune image PNG ou JPEG dans le presse-papiers. Copiez l’image elle-même, pas son adresse.",
+    "es": "No hay ninguna imagen PNG o JPEG en el portapapeles. Copia la propia imagen, no su dirección."
+  },
+  "{} × {} px · Vorschau scrollen, um auch das Seitenende zu prüfen.": {
+    "en": "{} × {} px · Scroll the preview to check the bottom of the page.",
+    "fr": "{} × {} px · Faites défiler l’aperçu pour vérifier le bas de la page.",
+    "es": "{} × {} px · Desplázate por la vista previa para comprobar el final de la página."
+  },
+  "Sitzung konnte nicht wiederhergestellt werden: {}": {
+    "en": "Could not restore session: {}",
+    "fr": "Impossible de restaurer la session : {}",
+    "es": "No se pudo restaurar la sesión: {}"
+  },
+  "Sitzung wird bereits verwendet": {
+    "en": "Session already in use",
+    "fr": "Session déjà utilisée",
+    "es": "La sesión ya está en uso"
+  },
+  "Kein Hintergrund für die Autosicherung": {
+    "en": "No background for autosave",
+    "fr": "Aucun arrière-plan pour la sauvegarde automatique",
+    "es": "No hay fondo para el guardado automático"
+  },
+  "Kein Sicherungsverzeichnis": {
+    "en": "No recovery directory",
+    "fr": "Aucun dossier de récupération",
+    "es": "No hay directorio de recuperación"
+  },
+  "Autosicherung wurde beendet": {
+    "en": "Autosave has stopped",
+    "fr": "La sauvegarde automatique s’est arrêtée",
+    "es": "El guardado automático se ha detenido"
+  },
+  "Autosicherung antwortet nicht": {
+    "en": "Autosave is not responding",
+    "fr": "La sauvegarde automatique ne répond pas",
+    "es": "El guardado automático no responde"
+  },
+  "Bildschirm anklicken · Anordnung entspricht deinem Desktop": {
+    "en": "Click a monitor · Layout matches your desktop",
+    "fr": "Cliquez sur un écran · Disposition de votre bureau",
+    "es": "Haz clic en una pantalla · Disposición de tu escritorio"
+  },
+  "Keine eindeutige Monitorzuordnung vorhanden": {
+    "en": "No unambiguous monitor mapping available",
+    "fr": "Impossible d’identifier les écrans avec certitude",
+    "es": "No se puede identificar cada pantalla de forma inequívoca"
+  },
+  "Bereit · Strg+Shift+X": {
+    "en": "Ready · Ctrl+Shift+X",
+    "fr": "Prêt · Ctrl+Maj+X",
+    "es": "Listo · Ctrl+Mayús+X"
+  },
+  "Bereich auswählen": {
+    "en": "Select region",
+    "fr": "Sélectionner une zone",
+    "es": "Seleccionar región"
+  },
+  "Bereich auswählen · 3 Sekunden": {
+    "en": "Select region · 3 seconds",
+    "fr": "Sélectionner une zone · 3 secondes",
+    "es": "Seleccionar región · 3 segundos"
+  },
+  "Ganzer Bildschirm": {
+    "en": "Entire screen",
+    "fr": "Écran entier",
+    "es": "Pantalla completa"
+  },
+  "Systemauswahl (Monitor / Fenster)": {
+    "en": "System selection (monitor / window)",
+    "fr": "Sélection système (écran / fenêtre)",
+    "es": "Selección del sistema (pantalla / ventana)"
+  },
+  "Editor öffnen": {
+    "en": "Open editor",
+    "fr": "Ouvrir l’éditeur",
+    "es": "Abrir editor"
+  },
+  "Aufnahme abbrechen": {
+    "en": "Cancel capture",
+    "fr": "Annuler la capture",
+    "es": "Cancelar captura"
+  },
+  "UntuShot beenden": {
+    "en": "Quit UntuShot",
+    "fr": "Quitter UntuShot",
+    "es": "Salir de UntuShot"
+  },
+  "UntuShot: {error:#}": {
+    "en": "UntuShot: {error:#}",
+    "fr": "UntuShot : {error:#}",
+    "es": "UntuShot: {error:#}"
+  },
+  "UntuShot: Warte auf AppIndicator-Unterstützung des Desktops.": {
+    "en": "UntuShot: waiting for desktop AppIndicator support.",
+    "fr": "UntuShot : attente de la prise en charge d’AppIndicator par le bureau.",
+    "es": "UntuShot: esperando la compatibilidad del escritorio con AppIndicator."
+  },
+  "Ein Dialog oder Befehl ist bereits aktiv": {
+    "en": "A dialog or command is already active",
+    "fr": "Une boîte de dialogue ou une commande est déjà active",
+    "es": "Ya hay un diálogo o comando activo"
+  },
+  "Bitte zuerst den geöffneten Dialog abschließen": {
+    "en": "Please finish the open dialog first",
+    "fr": "Terminez d’abord la boîte de dialogue ouverte",
+    "es": "Termina primero el diálogo abierto"
+  },
+  "Beenden abgebrochen: Sitzung konnte nicht gesichert werden": {
+    "en": "Quit cancelled: could not save the session",
+    "fr": "Fermeture annulée : impossible de sauvegarder la session",
+    "es": "Salida cancelada: no se pudo guardar la sesión"
+  },
+  "UntuShot beendet": {
+    "en": "UntuShot has quit",
+    "fr": "UntuShot est fermé",
+    "es": "UntuShot se ha cerrado"
+  },
+  "UntuShot ohne Tray: {error:#}": {
+    "en": "UntuShot without tray: {error:#}",
+    "fr": "UntuShot sans icône de notification : {error:#}",
+    "es": "UntuShot sin bandeja: {error:#}"
+  },
+  "UntuShot wartet im Hintergrund": {
+    "en": "UntuShot is waiting in the background",
+    "fr": "UntuShot est en attente en arrière-plan",
+    "es": "UntuShot está esperando en segundo plano"
+  },
+  "Eine Aufnahme läuft bereits": {
+    "en": "A capture is already running",
+    "fr": "Une capture est déjà en cours",
+    "es": "Ya hay una captura en curso"
+  },
+  "Aktion abgebrochen": {
+    "en": "Action cancelled",
+    "fr": "Action annulée",
+    "es": "Acción cancelada"
+  },
+  "UntuShot bereit": {
+    "en": "UntuShot ready",
+    "fr": "UntuShot est prêt",
+    "es": "UntuShot listo"
+  },
+  "UntuShot: {error}": {
+    "en": "UntuShot: {error}",
+    "fr": "UntuShot : {error}",
+    "es": "UntuShot: {error}"
+  },
+  "Kein UntuShot-Befehl": {
+    "en": "Not an UntuShot command",
+    "fr": "Commande UntuShot inconnue",
+    "es": "No es un comando de UntuShot"
+  },
+  "Einzelner Monitor oder gemeinsame Aufnahme über alle Displays.": {
+    "en": "Capture one monitor or the whole desktop across all displays.",
+    "fr": "Capturez un écran ou l’ensemble du bureau.",
+    "es": "Captura una pantalla o todo el escritorio."
+  },
+  "Einzelnen Monitor oder Fenster auswählen? Nutze „Systemauswahl“.": {
+    "en": "Need a particular monitor or window? Use “System selection”.",
+    "fr": "Un écran ou une fenêtre en particulier ? Utilisez « Sélection système ».",
+    "es": "¿Necesitas una pantalla o ventana concreta? Usa «Selección del sistema»."
+  },
+  "Bildschirm aufnehmen": {
+    "en": "Capture screen",
+    "fr": "Capturer l’écran",
+    "es": "Capturar pantalla"
+  },
+  "Systemauswahl öffnen": {
+    "en": "Open system selection",
+    "fr": "Ouvrir la sélection système",
+    "es": "Abrir selección del sistema"
+  },
+  "Aufnehmen  →  Bearbeiten  →  Teilen": {
+    "en": "Capture  →  Annotate  →  Share",
+    "fr": "Capturer  →  Annoter  →  Partager",
+    "es": "Capturar  →  Anotar  →  Compartir"
+  },
+  "Screenshot aufnehmen": {
+    "en": "Take a screenshot",
+    "fr": "Prendre une capture d’écran",
+    "es": "Hacer una captura de pantalla"
+  },
+  "Erst den Ausschnitt wählen. Dann die Details hervorheben.": {
+    "en": "Choose the region. Then highlight what matters.",
+    "fr": "Choisissez la zone. Puis mettez l’essentiel en évidence.",
+    "es": "Elige la región. Después destaca lo importante."
+  },
+  "Bereich": {
+    "en": "Region",
+    "fr": "Zone",
+    "es": "Región"
+  },
+  "Ausschnitt aufziehen": {
+    "en": "Draw a selection",
+    "fr": "Tracer une sélection",
+    "es": "Dibujar una selección"
+  },
+  "Quelle vollständig nutzen": {
+    "en": "Capture the entire source",
+    "fr": "Capturer toute la source",
+    "es": "Capturar toda la fuente"
+  },
+  "Systemauswahl": {
+    "en": "System selection",
+    "fr": "Sélection système",
+    "es": "Selección del sistema"
+  },
+  "Bildschirm / Quelle": {
+    "en": "Screen / source",
+    "fr": "Écran / source",
+    "es": "Pantalla / fuente"
+  },
+  "Gesamter Desktop — alle Bildschirme": {
+    "en": "Entire desktop — all monitors",
+    "fr": "Bureau entier — tous les écrans",
+    "es": "Escritorio completo — todas las pantallas"
+  },
+  "Bildschirm {} · {} · {} × {}": {
+    "en": "Monitor {} · {} · {} × {}",
+    "fr": "Écran {} · {} · {} × {}",
+    "es": "Pantalla {} · {} · {} × {}"
+  },
+  "Verzögerung": {
+    "en": "Delay",
+    "fr": "Délai",
+    "es": "Retardo"
+  },
+  "Sekunden · 0 = sofort": {
+    "en": "seconds · 0 = immediately",
+    "fr": "secondes · 0 = immédiatement",
+    "es": "segundos · 0 = inmediatamente"
+  },
+  "Danach kannst du jederzeit zuschneiden und Objekte bearbeiten.": {
+    "en": "You can crop and edit objects afterwards.",
+    "fr": "Vous pourrez ensuite recadrer et modifier les objets.",
+    "es": "Después podrás recortar y editar los objetos."
+  },
+  "Mit Demo ausprobieren": {
+    "en": "Try the demo",
+    "fr": "Essayer la démo",
+    "es": "Probar la demo"
+  },
+  "Webseite übernehmen …": {
+    "en": "Import web page …",
+    "fr": "Importer une page web…",
+    "es": "Importar página web…"
+  },
+  "Eine ganze Seite im Browser kopieren und mit Vorschau übernehmen": {
+    "en": "Copy a full page in your browser and preview it here",
+    "fr": "Copier une page entière dans le navigateur et vérifier l’aperçu ici",
+    "es": "Copia una página completa en el navegador y comprueba la vista previa aquí"
+  },
+  "Zurück zum Editor": {
+    "en": "Back to editor",
+    "fr": "Retour à l’éditeur",
+    "es": "Volver al editor"
+  },
+  "Letzte Sitzung wiederhergestellt · Original, Ebenen und Ausschnitt": {
+    "en": "Last session restored · Original image, layers and crop",
+    "fr": "Dernière session restaurée · Original, calques et cadrage",
+    "es": "Última sesión restaurada · Original, capas y recorte"
+  },
+  "Autosicherung: {error:#}": {
+    "en": "Autosave: {error:#}",
+    "fr": "Sauvegarde automatique : {error:#}",
+    "es": "Guardado automático: {error:#}"
+  },
+  "Einstellungen konnten nicht gespeichert werden: {error:#}": {
+    "en": "Could not save settings: {error:#}",
+    "fr": "Impossible d’enregistrer les réglages : {error:#}",
+    "es": "No se pudieron guardar los ajustes: {error:#}"
+  },
+  "Datei · Öffnen, Speichern und Exportieren": {
+    "en": "File · Open, save and export",
+    "fr": "Fichier · Ouvrir, enregistrer et exporter",
+    "es": "Archivo · Abrir, guardar y exportar"
+  },
+  "Neue Aufnahme": {
+    "en": "New capture",
+    "fr": "Nouvelle capture",
+    "es": "Nueva captura"
+  },
+  "Strg+N · Aufnahme einrichten": {
+    "en": "Ctrl+N · Set up capture",
+    "fr": "Ctrl+N · Configurer la capture",
+    "es": "Ctrl+N · Configurar captura"
+  },
+  "Bild oder Projekt öffnen …": {
+    "en": "Open image or project …",
+    "fr": "Ouvrir une image ou un projet…",
+    "es": "Abrir imagen o proyecto…"
+  },
+  "Bild oder bearbeitbares Projekt öffnen · Strg+O": {
+    "en": "Open an image or editable project · Ctrl+O",
+    "fr": "Ouvrir une image ou un projet modifiable · Ctrl+O",
+    "es": "Abrir una imagen o un proyecto editable · Ctrl+O"
+  },
+  "Projekt öffnen …": {
+    "en": "Open project …",
+    "fr": "Ouvrir un projet…",
+    "es": "Abrir proyecto…"
+  },
+  "Gespeichertes Projekt mit allen bearbeitbaren Ebenen öffnen": {
+    "en": "Open a saved project with all its editable layers",
+    "fr": "Ouvrir un projet enregistré avec tous ses calques modifiables",
+    "es": "Abrir un proyecto guardado con todas sus capas editables"
+  },
+  "Projekt speichern": {
+    "en": "Save project",
+    "fr": "Enregistrer le projet",
+    "es": "Guardar proyecto"
+  },
+  "Zum Weiterbearbeiten: geöffnetes Projekt aktualisieren oder Ziel wählen · Strg+Alt+S": {
+    "en": "Keep editing later: update the open project or choose a destination · Ctrl+Alt+S",
+    "fr": "Pour reprendre plus tard : enregistrer le projet actuel ou choisir une destination · Ctrl+Alt+S",
+    "es": "Para seguir editando después: actualizar el proyecto o elegir destino · Ctrl+Alt+S"
+  },
+  "Projekt speichern unter …": {
+    "en": "Save project as …",
+    "fr": "Enregistrer le projet sous…",
+    "es": "Guardar proyecto como…"
+  },
+  "Bearbeitung in einer neuen Projektdatei speichern · Strg+Alt+Umschalt+S": {
+    "en": "Save your work to a new project file · Ctrl+Alt+Shift+S",
+    "fr": "Enregistrer dans un nouveau fichier projet · Ctrl+Alt+Maj+S",
+    "es": "Guardar en un nuevo archivo de proyecto · Ctrl+Alt+Mayús+S"
+  },
+  "Kopieren": {
+    "en": "Copy",
+    "fr": "Copier",
+    "es": "Copiar"
+  },
+  "Bild in die Zwischenablage kopieren · Strg+C": {
+    "en": "Copy image to clipboard · Ctrl+C",
+    "fr": "Copier l’image dans le presse-papiers · Ctrl+C",
+    "es": "Copiar imagen al portapapeles · Ctrl+C"
+  },
+  "PNG exportieren": {
+    "en": "Export PNG",
+    "fr": "Exporter en PNG",
+    "es": "Exportar PNG"
+  },
+  "Fertiges Bild als PNG speichern · Strg+S": {
+    "en": "Save the finished image as PNG · Ctrl+S",
+    "fr": "Enregistrer l’image finale en PNG · Ctrl+S",
+    "es": "Guardar la imagen final como PNG · Ctrl+S"
+  },
+  "Bild als neues Dokument …": {
+    "en": "Image as new document …",
+    "fr": "Image comme nouveau document…",
+    "es": "Imagen como documento nuevo…"
+  },
+  "Zwischenablage mit Vorschau als neues Dokument öffnen · Strg+Umschalt+V": {
+    "en": "Preview clipboard image as a new document · Ctrl+Shift+V",
+    "fr": "Prévisualiser l’image du presse-papiers comme nouveau document · Ctrl+Maj+V",
+    "es": "Previsualizar la imagen del portapapeles como documento nuevo · Ctrl+Mayús+V"
+  },
+  "Als neue Ebene einfügen": {
+    "en": "Paste as new layer",
+    "fr": "Coller comme nouveau calque",
+    "es": "Pegar como capa nueva"
+  },
+  "Bild aus der Zwischenablage als Ebene einfügen · Strg+V": {
+    "en": "Paste clipboard image as a layer · Ctrl+V",
+    "fr": "Coller l’image du presse-papiers comme calque · Ctrl+V",
+    "es": "Pegar la imagen del portapapeles como capa · Ctrl+V"
+  },
+  "Bild rechts anfügen …": {
+    "en": "Append image to the right …",
+    "fr": "Ajouter une image à droite…",
+    "es": "Añadir imagen a la derecha…"
+  },
+  "PNG oder JPEG als eigene Bildebene anfügen · Strg+I": {
+    "en": "Append PNG or JPEG as an image layer · Ctrl+I",
+    "fr": "Ajouter un PNG ou JPEG comme calque · Ctrl+I",
+    "es": "Añadir PNG o JPEG como capa de imagen · Ctrl+I"
+  },
+  "PNG speichern": {
+    "en": "Save PNG",
+    "fr": "Enregistrer le PNG",
+    "es": "Guardar PNG"
+  },
+  "Bestätigten PNG-Export aktualisieren, sonst Ziel wählen · Strg+S": {
+    "en": "Update the confirmed PNG export, or choose a destination · Ctrl+S",
+    "fr": "Actualiser l’export PNG confirmé ou choisir une destination · Ctrl+S",
+    "es": "Actualizar la exportación PNG confirmada o elegir destino · Ctrl+S"
+  },
+  "PNG speichern unter …": {
+    "en": "Save PNG as …",
+    "fr": "Enregistrer le PNG sous…",
+    "es": "Guardar PNG como…"
+  },
+  "Neues PNG-Ziel wählen · Strg+Umschalt+S": {
+    "en": "Choose a new PNG destination · Ctrl+Shift+S",
+    "fr": "Choisir une nouvelle destination PNG · Ctrl+Maj+S",
+    "es": "Elegir un nuevo destino PNG · Ctrl+Mayús+S"
+  },
+  "Fenster schließen": {
+    "en": "Close window",
+    "fr": "Fermer la fenêtre",
+    "es": "Cerrar ventana"
+  },
+  "Strg+W · Bei aktivem Tray im Hintergrund weiterlaufen": {
+    "en": "Ctrl+W · Keep running in the background when the tray is active",
+    "fr": "Ctrl+W · Rester en arrière-plan si l’icône de notification est active",
+    "es": "Ctrl+W · Seguir en segundo plano si la bandeja está activa"
+  },
+  "Strg+Q · Sitzung sichern und vollständig beenden": {
+    "en": "Ctrl+Q · Save the session and quit completely",
+    "fr": "Ctrl+Q · Sauvegarder la session et quitter complètement",
+    "es": "Ctrl+Q · Guardar la sesión y salir por completo"
+  },
+  "Ausschnitt": {
+    "en": "Crop",
+    "fr": "Cadrage",
+    "es": "Recorte"
+  },
+  "Ganzes Bild oder Monitor wählen. Frei zuschneiden mit Werkzeug 1.": {
+    "en": "Choose the whole image or a monitor. Use tool 1 for a custom crop.",
+    "fr": "Choisissez l’image entière ou un écran. Utilisez l’outil 1 pour un cadrage libre.",
+    "es": "Elige la imagen completa o una pantalla. Usa la herramienta 1 para un recorte libre."
+  },
+  "Grafische Monitorübersicht": {
+    "en": "Visual monitor overview",
+    "fr": "Vue d’ensemble des écrans",
+    "es": "Vista general de las pantallas"
+  },
+  "Werkzeuge ein-/ausklappen · F8": {
+    "en": "Show or hide tools · F8",
+    "fr": "Afficher ou masquer les outils · F8",
+    "es": "Mostrar u ocultar herramientas · F8"
+  },
+  "Ebenen ein-/ausklappen · F9 · Tab: beide Seitenleisten": {
+    "en": "Show or hide layers · F9 · Tab: both sidebars",
+    "fr": "Afficher ou masquer les calques · F9 · Tab : les deux panneaux",
+    "es": "Mostrar u ocultar capas · F9 · Tab: ambos paneles"
+  },
+  "Verkleinern · −": {
+    "en": "Zoom out · −",
+    "fr": "Dézoomer · −",
+    "es": "Alejar · −"
+  },
+  "Vergrößern · +": {
+    "en": "Zoom in · +",
+    "fr": "Zoomer · +",
+    "es": "Acercar · +"
+  },
+  "Gesamtes Bild einpassen · 0": {
+    "en": "Fit the entire image · 0",
+    "fr": "Ajuster l’image entière · 0",
+    "es": "Ajustar la imagen completa · 0"
+  },
+  "Werkzeuge": {
+    "en": "Tools",
+    "fr": "Outils",
+    "es": "Herramientas"
+  },
+  "Zeichenstil": {
+    "en": "Drawing style",
+    "fr": "Style de dessin",
+    "es": "Estilo de dibujo"
+  },
+  "Objektfarbe": {
+    "en": "Object color",
+    "fr": "Couleur de l’objet",
+    "es": "Color del objeto"
+  },
+  "Farbe": {
+    "en": "Color",
+    "fr": "Couleur",
+    "es": "Color"
+  },
+  "Linienstärke in Bildpixeln; Text hat eine eigene Schriftgröße": {
+    "en": "Stroke width in image pixels; text has its own font size",
+    "fr": "Épaisseur en pixels de l’image ; le texte a sa propre taille",
+    "es": "Grosor en píxeles de la imagen; el texto tiene su propio tamaño"
+  },
+  "Stärke": {
+    "en": "Width",
+    "fr": "Épaisseur",
+    "es": "Grosor"
+  },
+  "Schrift": {
+    "en": "Font",
+    "fr": "Texte",
+    "es": "Texto"
+  },
+  "Schriftgröße im exportierten Bild, unabhängig von der Linienstärke": {
+    "en": "Font size in the exported image, independent of stroke width",
+    "fr": "Taille du texte dans l’image exportée, indépendante de l’épaisseur du trait",
+    "es": "Tamaño del texto en la imagen exportada, independiente del grosor"
+  },
+  "Rückgängig · Strg+Z": {
+    "en": "Undo · Ctrl+Z",
+    "fr": "Annuler · Ctrl+Z",
+    "es": "Deshacer · Ctrl+Z"
+  },
+  "Wiederholen · Strg+Umschalt+Z": {
+    "en": "Redo · Ctrl+Shift+Z",
+    "fr": "Rétablir · Ctrl+Maj+Z",
+    "es": "Rehacer · Ctrl+Mayús+Z"
+  },
+  "Monitorgrenzen": {
+    "en": "Monitor borders",
+    "fr": "Limites des écrans",
+    "es": "Límites de las pantallas"
+  },
+  "Einrasten · S": {
+    "en": "Snap · S",
+    "fr": "Magnétisme · S",
+    "es": "Ajustar · S"
+  },
+  "Beim Verschieben an Kanten und Mitten ausrichten · S: umschalten · Alt: vorübergehend frei verschieben": {
+    "en": "Snap to edges and centers while moving · S: toggle · Alt: temporarily move freely",
+    "fr": "Aligner sur les bords et les centres · S : activer · Alt : déplacement libre temporaire",
+    "es": "Ajustar a bordes y centros al mover · S: activar · Alt: mover libremente de forma temporal"
+  },
+  "Übernehmen": {
+    "en": "Apply",
+    "fr": "Appliquer",
+    "es": "Aplicar"
+  },
+  "Enter · Shift+Enter: neue Zeile": {
+    "en": "Enter · Shift+Enter: new line",
+    "fr": "Entrée · Maj+Entrée : nouvelle ligne",
+    "es": "Intro · Mayús+Intro: nueva línea"
+  },
+  "Esc · Textänderung verwerfen": {
+    "en": "Esc · Discard text changes",
+    "fr": "Échap · Abandonner les modifications du texte",
+    "es": "Esc · Descartar cambios de texto"
+  },
+  "Enter übernimmt · Shift+Enter fügt eine Zeile ein · Esc verwirft": {
+    "en": "Enter applies · Shift+Enter adds a line · Esc discards",
+    "fr": "Entrée applique · Maj+Entrée ajoute une ligne · Échap annule",
+    "es": "Intro aplica · Mayús+Intro añade una línea · Esc descarta"
+  },
+  "Ebenen": {
+    "en": "Layers",
+    "fr": "Calques",
+    "es": "Capas"
+  },
+  "Shift-/Strg-Klick: mehrere Objekte auswählen": {
+    "en": "Shift/Ctrl-click: select multiple objects",
+    "fr": "Maj/Ctrl-clic : sélectionner plusieurs objets",
+    "es": "Mayús/Ctrl-clic: seleccionar varios objetos"
+  },
+  "Noch keine Ebenen": {
+    "en": "No layers yet",
+    "fr": "Aucun calque pour le moment",
+    "es": "Aún no hay capas"
+  },
+  "Pfeile, Formen und Text bleiben einzeln editierbar.": {
+    "en": "Arrows, shapes and text stay individually editable.",
+    "fr": "Flèches, formes et textes restent modifiables séparément.",
+    "es": "Las flechas, formas y textos siguen siendo editables por separado."
+  },
+  "Ebene nach vorne": {
+    "en": "Bring layer forward",
+    "fr": "Avancer le calque",
+    "es": "Traer capa adelante"
+  },
+  "Ebene nach hinten": {
+    "en": "Send layer backward",
+    "fr": "Reculer le calque",
+    "es": "Enviar capa atrás"
+  },
+  "Ausgewählte Ebene löschen · Entf": {
+    "en": "Delete selected layer · Delete",
+    "fr": "Supprimer le calque sélectionné · Suppr",
+    "es": "Eliminar capa seleccionada · Supr"
+  },
+  "Ausgewählte Ebenen duplizieren · Strg+D": {
+    "en": "Duplicate selected layers · Ctrl+D",
+    "fr": "Dupliquer les calques sélectionnés · Ctrl+D",
+    "es": "Duplicar capas seleccionadas · Ctrl+D"
+  },
+  "Ebenenname": {
+    "en": "Layer name",
+    "fr": "Nom du calque",
+    "es": "Nombre de capa"
+  },
+  "Ebenenname ändern · Enter bestätigen · F2": {
+    "en": "Rename layer · Enter to confirm · F2",
+    "fr": "Renommer le calque · Entrée pour confirmer · F2",
+    "es": "Renombrar capa · Intro para confirmar · F2"
+  },
+  "Links ausrichten": {
+    "en": "Align left",
+    "fr": "Aligner à gauche",
+    "es": "Alinear a la izquierda"
+  },
+  "Horizontal zentrieren": {
+    "en": "Center horizontally",
+    "fr": "Centrer horizontalement",
+    "es": "Centrar horizontalmente"
+  },
+  "Rechts ausrichten": {
+    "en": "Align right",
+    "fr": "Aligner à droite",
+    "es": "Alinear a la derecha"
+  },
+  "Oben ausrichten": {
+    "en": "Align top",
+    "fr": "Aligner en haut",
+    "es": "Alinear arriba"
+  },
+  "Vertikal zentrieren": {
+    "en": "Center vertically",
+    "fr": "Centrer verticalement",
+    "es": "Centrar verticalmente"
+  },
+  "Unten ausrichten": {
+    "en": "Align bottom",
+    "fr": "Aligner en bas",
+    "es": "Alinear abajo"
+  },
+  "Auswahl ausrichten": {
+    "en": "Align selection",
+    "fr": "Aligner la sélection",
+    "es": "Alinear selección"
+  },
+  "Mindestens zwei Objekte mit Shift-Klick oder in der Ebenenliste auswählen": {
+    "en": "Select at least two objects with Shift-click or in the layer list",
+    "fr": "Sélectionnez au moins deux objets avec Maj-clic ou dans la liste des calques",
+    "es": "Selecciona al menos dos objetos con Mayús-clic o en la lista de capas"
+  },
+  "Hintergrundbild": {
+    "en": "Background image",
+    "fr": "Image d’arrière-plan",
+    "es": "Imagen de fondo"
+  },
+  "Eigenschaften": {
+    "en": "Properties",
+    "fr": "Propriétés",
+    "es": "Propiedades"
+  },
+  "Ebene sichtbar": {
+    "en": "Layer visible",
+    "fr": "Calque visible",
+    "es": "Capa visible"
+  },
+  "Breite": {
+    "en": "Width",
+    "fr": "Largeur",
+    "es": "Ancho"
+  },
+  "Höhe": {
+    "en": "Height",
+    "fr": "Hauteur",
+    "es": "Alto"
+  },
+  "Position und Größe": {
+    "en": "Position and size",
+    "fr": "Position et dimensions",
+    "es": "Posición y tamaño"
+  },
+  "Text ändern": {
+    "en": "Edit text",
+    "fr": "Modifier le texte",
+    "es": "Editar texto"
+  },
+  "Text der ausgewählten Ebene bearbeiten": {
+    "en": "Edit the selected text layer",
+    "fr": "Modifier le calque de texte sélectionné",
+    "es": "Editar la capa de texto seleccionada"
+  },
+  "Rand": {
+    "en": "Border",
+    "fr": "Bordure",
+    "es": "Borde"
+  },
+  "Randfarbe": {
+    "en": "Border color",
+    "fr": "Couleur de bordure",
+    "es": "Color del borde"
+  },
+  "Randstärke in Pixeln · direkt im Bild · Strg+Z: rückgängig": {
+    "en": "Border width in pixels · Live preview · Ctrl+Z: undo",
+    "fr": "Épaisseur de bordure en pixels · Aperçu direct · Ctrl+Z : annuler",
+    "es": "Grosor del borde en píxeles · Vista previa en vivo · Ctrl+Z: deshacer"
+  },
+  "Schatten": {
+    "en": "Shadow",
+    "fr": "Ombre",
+    "es": "Sombra"
+  },
+  "Deckkraft des Schattens in Prozent · direkt im Bild": {
+    "en": "Shadow opacity in percent · Live preview",
+    "fr": "Opacité de l’ombre en pourcentage · Aperçu direct",
+    "es": "Opacidad de la sombra en porcentaje · Vista previa en vivo"
+  },
+  "Deckkraft": {
+    "en": "Opacity",
+    "fr": "Opacité",
+    "es": "Opacidad"
+  },
+  "Weichheit": {
+    "en": "Blur",
+    "fr": "Flou",
+    "es": "Desenfoque"
+  },
+  "Versatz": {
+    "en": "Offset",
+    "fr": "Décalage",
+    "es": "Desplazamiento"
+  },
+  "V: Objekt anklicken und verschieben. An acht Griffen skalieren. Bilder und Text behalten ihre Proportionen. Esc bricht das Ziehen ab.": {
+    "en": "V: click and move an object. Resize with eight handles. Images and text keep their proportions. Esc cancels the drag.",
+    "fr": "V : cliquez et déplacez un objet. Huit poignées permettent le redimensionnement. Images et texte gardent leurs proportions. Échap annule.",
+    "es": "V: pulsa y mueve un objeto. Redimensiona con ocho tiradores. Las imágenes y el texto conservan sus proporciones. Esc cancela."
+  },
+  "Die Trennlinie links ziehen, um die Ebenenleiste breiter oder schmaler zu machen": {
+    "en": "Drag the divider on the left to resize the layers sidebar",
+    "fr": "Faites glisser la séparation à gauche pour redimensionner le panneau des calques",
+    "es": "Arrastra el separador izquierdo para ajustar el ancho del panel de capas"
+  },
+  "Bereich aufziehen → Ausschnitt bestätigen → annotieren": {
+    "en": "Draw region → Confirm crop → Annotate",
+    "fr": "Tracer la zone → Confirmer le cadrage → Annoter",
+    "es": "Dibujar región → Confirmar recorte → Anotar"
+  },
+  "Bereich übernehmen · Enter": {
+    "en": "Confirm region · Enter",
+    "fr": "Confirmer la zone · Entrée",
+    "es": "Confirmar región · Intro"
+  },
+  "Auswahl aufziehen · Shift: neu · Esc: aufheben": {
+    "en": "Draw selection · Shift: new · Esc: clear",
+    "fr": "Tracer la sélection · Maj : nouvelle · Échap : effacer",
+    "es": "Dibujar selección · Mayús: nueva · Esc: quitar"
+  },
+  "Auswahl kopieren": {
+    "en": "Copy selection",
+    "fr": "Copier la sélection",
+    "es": "Copiar selección"
+  },
+  "Sichtbaren Inhalt der Auswahl kopieren · Strg+C": {
+    "en": "Copy the visible content of the selection · Ctrl+C",
+    "fr": "Copier le contenu visible de la sélection · Ctrl+C",
+    "es": "Copiar el contenido visible de la selección · Ctrl+C"
+  },
+  "Als neue Ebene · Strg+J": {
+    "en": "As new layer · Ctrl+J",
+    "fr": "Nouveau calque · Ctrl+J",
+    "es": "Como capa nueva · Ctrl+J"
+  },
+  "Sichtbaren Inhalt kopieren, Original beibehalten": {
+    "en": "Copy the visible content and keep the original",
+    "fr": "Copier le contenu visible et conserver l’original",
+    "es": "Copiar el contenido visible y conservar el original"
+  },
+  "Pixellupe": {
+    "en": "Pixel magnifier",
+    "fr": "Loupe de pixels",
+    "es": "Lupa de píxeles"
+  },
+  "Bereit für deine nächste Aufnahme.": {
+    "en": "Ready for your next capture.",
+    "fr": "Prêt pour votre prochaine capture.",
+    "es": "Listo para tu próxima captura."
+  },
+  "Speicherstatus": {
+    "en": "Save status",
+    "fr": "État des sauvegardes",
+    "es": "Estado de guardado"
+  },
+  "Dein Arbeitsstand": {
+    "en": "Your work",
+    "fr": "Votre travail",
+    "es": "Tu trabajo"
+  },
+  "Autosicherung ersetzt keine gespeicherte Bild- oder Projektdatei.": {
+    "en": "Autosave does not replace a saved image or project file.",
+    "fr": "La sauvegarde automatique ne remplace pas un fichier image ou projet enregistré.",
+    "es": "El guardado automático no sustituye a un archivo de imagen o proyecto guardado."
+  },
+  "Alle Ebenen zum Weiterbearbeiten speichern · Strg+Alt+S": {
+    "en": "Save all layers for further editing · Ctrl+Alt+S",
+    "fr": "Enregistrer tous les calques pour poursuivre l’édition · Ctrl+Alt+S",
+    "es": "Guardar todas las capas para seguir editando · Ctrl+Alt+S"
+  },
+  "X-Position in Pixeln · direkte Vorschau · Strg+Z: rückgängig": {
+    "en": "X position in pixels · Live preview · Ctrl+Z: undo",
+    "fr": "Position X en pixels · Aperçu direct · Ctrl+Z : annuler",
+    "es": "Posición X en píxeles · Vista previa en vivo · Ctrl+Z: deshacer"
+  },
+  "Y-Position in Pixeln · direkte Vorschau · Strg+Z: rückgängig": {
+    "en": "Y position in pixels · Live preview · Ctrl+Z: undo",
+    "fr": "Position Y en pixels · Aperçu direct · Ctrl+Z : annuler",
+    "es": "Posición Y en píxeles · Vista previa en vivo · Ctrl+Z: deshacer"
+  },
+  "Breite in Pixeln · direkte Vorschau · Bilder und Text bleiben proportional": {
+    "en": "Width in pixels · Live preview · Images and text stay proportional",
+    "fr": "Largeur en pixels · Aperçu direct · Images et texte gardent leurs proportions",
+    "es": "Ancho en píxeles · Vista previa en vivo · Imágenes y texto conservan sus proporciones"
+  },
+  "Höhe in Pixeln · direkte Vorschau · Bilder und Text bleiben proportional": {
+    "en": "Height in pixels · Live preview · Images and text stay proportional",
+    "fr": "Hauteur en pixels · Aperçu direct · Images et texte gardent leurs proportions",
+    "es": "Alto en píxeles · Vista previa en vivo · Imágenes y texto conservan sus proporciones"
+  },
+  "Randstärke in Pixeln · direkte Vorschau": {
+    "en": "Border width in pixels · Live preview",
+    "fr": "Épaisseur de bordure en pixels · Aperçu direct",
+    "es": "Grosor del borde en píxeles · Vista previa en vivo"
+  },
+  "Weichheit des Schattens in Pixeln · direkte Vorschau": {
+    "en": "Shadow blur in pixels · Live preview",
+    "fr": "Flou de l’ombre en pixels · Aperçu direct",
+    "es": "Desenfoque de la sombra en píxeles · Vista previa en vivo"
+  },
+  "Versatz des Schattens in Pixeln · direkte Vorschau": {
+    "en": "Shadow offset in pixels · Live preview",
+    "fr": "Décalage de l’ombre en pixels · Aperçu direct",
+    "es": "Desplazamiento de la sombra en píxeles · Vista previa en vivo"
+  },
+  "Deckkraft des Schattens in Prozent · direkte Vorschau": {
+    "en": "Shadow opacity in percent · Live preview",
+    "fr": "Opacité de l’ombre en pourcentage · Aperçu direct",
+    "es": "Opacidad de la sombra en porcentaje · Vista previa en vivo"
+  },
+  "Demo · keine Bildschirmaufnahme": {
+    "en": "Demo · No screen capture",
+    "fr": "Démo · Aucune capture d’écran",
+    "es": "Demo · Sin captura de pantalla"
+  },
+  "Countdown abgebrochen. Bereit für eine neue Aufnahme.": {
+    "en": "Countdown cancelled. Ready for a new capture.",
+    "fr": "Compte à rebours annulé. Prêt pour une nouvelle capture.",
+    "es": "Cuenta atrás cancelada. Listo para una nueva captura."
+  },
+  "Demo · 2 Displays · keine Bildschirmaufnahme": {
+    "en": "Demo · 2 monitors · No screen capture",
+    "fr": "Démo · 2 écrans · Aucune capture d’écran",
+    "es": "Demo · 2 pantallas · Sin captura de pantalla"
+  },
+  "Datei geöffnet": {
+    "en": "File opened",
+    "fr": "Fichier ouvert",
+    "es": "Archivo abierto"
+  },
+  "Vor dem Ausblenden konnte nicht gesichert werden": {
+    "en": "Could not save before hiding the window",
+    "fr": "Impossible de sauvegarder avant de masquer la fenêtre",
+    "es": "No se pudo guardar antes de ocultar la ventana"
+  },
+  "Autosicherung nicht verfügbar. Bitte zuerst ein Projekt speichern.": {
+    "en": "Autosave unavailable. Please save a project first.",
+    "fr": "Sauvegarde automatique indisponible. Enregistrez d’abord un projet.",
+    "es": "Guardado automático no disponible. Guarda primero un proyecto."
+  },
+  "Bildschirm {index} ist nicht direkt auswählbar. Bitte Quelle prüfen oder Systemauswahl verwenden.": {
+    "en": "Monitor {index} cannot be selected directly. Check the source or use system selection.",
+    "fr": "L’écran {index} ne peut pas être sélectionné directement. Vérifiez la source ou utilisez la sélection système.",
+    "es": "No se puede seleccionar directamente la pantalla {index}. Comprueba la fuente o usa la selección del sistema."
+  },
+  "Einstellungen nicht geladen: {error:#}": {
+    "en": "Settings not loaded: {error:#}",
+    "fr": "Réglages non chargés : {error:#}",
+    "es": "No se cargaron los ajustes: {error:#}"
+  },
+  "Bereit · Neue Aufnahme mit Strg+N · Schließen über das Fenster": {
+    "en": "Ready · New capture with Ctrl+N · Close using the window controls",
+    "fr": "Prêt · Nouvelle capture avec Ctrl+N · Fermez avec les contrôles de la fenêtre",
+    "es": "Listo · Nueva captura con Ctrl+N · Cierra desde los controles de la ventana"
+  },
+  "Sicherung fehlgeschlagen": {
+    "en": "Recovery failed",
+    "fr": "Échec de la sauvegarde",
+    "es": "Error de recuperación"
+  },
+  "Autosicherung aus": {
+    "en": "Autosave off",
+    "fr": "Sauvegarde automatique désactivée",
+    "es": "Guardado automático desactivado"
+  },
+  "Automatisch gesichert": {
+    "en": "Automatically saved",
+    "fr": "Sauvegardé automatiquement",
+    "es": "Guardado automáticamente"
+  },
+  "Sicherung ausstehend": {
+    "en": "Autosave pending",
+    "fr": "Sauvegarde en attente",
+    "es": "Guardado automático pendiente"
+  },
+  "Projekt gespeichert": {
+    "en": "Project saved",
+    "fr": "Projet enregistré",
+    "es": "Proyecto guardado"
+  },
+  "Projekt geändert": {
+    "en": "Project modified",
+    "fr": "Projet modifié",
+    "es": "Proyecto modificado"
+  },
+  "Projekt noch nicht gespeichert": {
+    "en": "Project not saved yet",
+    "fr": "Projet pas encore enregistré",
+    "es": "Proyecto aún sin guardar"
+  },
+  "PNG aktuell": {
+    "en": "PNG up to date",
+    "fr": "PNG à jour",
+    "es": "PNG actualizado"
+  },
+  "PNG enthält älteren Stand": {
+    "en": "PNG contains an older version",
+    "fr": "Le PNG contient une version antérieure",
+    "es": "El PNG contiene una versión anterior"
+  },
+  "Noch kein PNG-Export": {
+    "en": "No PNG export yet",
+    "fr": "Aucun export PNG pour le moment",
+    "es": "Aún no se ha exportado a PNG"
+  },
+  " · Text in Bearbeitung": {
+    "en": " · Editing text",
+    "fr": " · Texte en cours d’édition",
+    "es": " · Editando texto"
+  },
+  " · Ebenenname in Bearbeitung": {
+    "en": " · Editing layer name",
+    "fr": " · Nom du calque en cours d’édition",
+    "es": " · Editando nombre de capa"
+  },
+  "Bilddatei zum Teilen": {
+    "en": "Image to share",
+    "fr": "Image à partager",
+    "es": "Imagen para compartir"
+  },
+  "Projekt zum Weiterbearbeiten": {
+    "en": "Project to edit later",
+    "fr": "Projet à modifier plus tard",
+    "es": "Proyecto para editar después"
+  },
+  "Beim nächsten Start": {
+    "en": "Next time you start",
+    "fr": "Au prochain démarrage",
+    "es": "En el próximo inicio"
+  },
+  "Projekt: Text in Bearbeitung": {
+    "en": "Project: editing text",
+    "fr": "Projet : texte en cours d’édition",
+    "es": "Proyecto: editando texto"
+  },
+  "Projekt: Name in Bearbeitung": {
+    "en": "Project: editing name",
+    "fr": "Projet : nom en cours d’édition",
+    "es": "Proyecto: editando nombre"
+  },
+  "Projekt: gespeichert": {
+    "en": "Project: saved",
+    "fr": "Projet : enregistré",
+    "es": "Proyecto: guardado"
+  },
+  "Projekt: geändert": {
+    "en": "Project: modified",
+    "fr": "Projet : modifié",
+    "es": "Proyecto: modificado"
+  },
+  "Projekt: ungespeichert": {
+    "en": "Project: unsaved",
+    "fr": "Projet : non enregistré",
+    "es": "Proyecto: sin guardar"
+  },
+  "{project_status} · Sicherungsfehler": {
+    "en": "{project_status} · Recovery error",
+    "fr": "{project_status} · Erreur de sauvegarde",
+    "es": "{project_status} · Error de recuperación"
+  },
+  "Einstellungen konnten nicht gespeichert werden": {
+    "en": "Could not save settings",
+    "fr": "Impossible d’enregistrer les réglages",
+    "es": "No se pudieron guardar los ajustes"
+  },
+  "Sitzung konnte vor dem Schließen nicht gesichert werden": {
+    "en": "Could not save session before closing",
+    "fr": "Impossible de sauvegarder la session avant la fermeture",
+    "es": "No se pudo guardar la sesión antes de cerrar"
+  },
+  "Zum Ausrichten mindestens zwei Objekte mit Shift-Klick auswählen.": {
+    "en": "Select at least two objects with Shift-click to align them.",
+    "fr": "Sélectionnez au moins deux objets avec Maj-clic pour les aligner.",
+    "es": "Selecciona al menos dos objetos con Mayús-clic para alinearlos."
+  },
+  "Ausschnitt prüfen · Griffe ziehen zum Anpassen · Enter: im Editor öffnen · Esc: zurück": {
+    "en": "Review crop · Drag handles to adjust · Enter: open in editor · Esc: back",
+    "fr": "Vérifier le cadrage · Ajuster avec les poignées · Entrée : ouvrir dans l’éditeur · Échap : retour",
+    "es": "Revisar recorte · Ajustar con los tiradores · Intro: abrir en el editor · Esc: volver"
+  },
+  "Bereich aufziehen · Maustaste gedrückt halten · Esc: zurück": {
+    "en": "Draw a region · Hold the mouse button · Esc: back",
+    "fr": "Tracer une zone · Maintenir le bouton de la souris · Échap : retour",
+    "es": "Dibujar una región · Mantener pulsado el ratón · Esc: volver"
+  },
+  "Griffe ziehen · Innen verschieben · Shift+Ziehen: neu · Pfeile: 1 px": {
+    "en": "Drag handles · Move inside · Shift+drag: new · Arrows: 1 px",
+    "fr": "Tirer les poignées · Déplacer à l’intérieur · Maj+glisser : nouveau · Flèches : 1 px",
+    "es": "Arrastrar tiradores · Mover desde dentro · Mayús+arrastrar: nuevo · Flechas: 1 px"
+  },
+  "Countdown abbrechen": {
+    "en": "Cancel countdown",
+    "fr": "Annuler le compte à rebours",
+    "es": "Cancelar cuenta atrás"
+  },
+  "Ebenen · {layer_count}": {
+    "en": "Layers · {layer_count}",
+    "fr": "Calques · {layer_count}",
+    "es": "Capas · {layer_count}"
+  },
+  "{count} Objekte ausgewählt": {
+    "en": "{count} objects selected",
+    "fr": "{count} objets sélectionnés",
+    "es": "{count} objetos seleccionados"
+  },
+  "Sichtbar": {
+    "en": "Visible",
+    "fr": "Visible",
+    "es": "Visible"
+  },
+  "Breite ändern · Höhe wird proportional angepasst": {
+    "en": "Change width · Height adjusts proportionally",
+    "fr": "Modifier la largeur · La hauteur s’ajuste proportionnellement",
+    "es": "Cambiar ancho · El alto se ajusta proporcionalmente"
+  },
+  "Breite in Bildpixeln": {
+    "en": "Width in image pixels",
+    "fr": "Largeur en pixels de l’image",
+    "es": "Ancho en píxeles de la imagen"
+  },
+  "Höhe ändern · Breite wird proportional angepasst": {
+    "en": "Change height · Width adjusts proportionally",
+    "fr": "Modifier la hauteur · La largeur s’ajuste proportionnellement",
+    "es": "Cambiar alto · El ancho se ajusta proporcionalmente"
+  },
+  "Höhe in Bildpixeln": {
+    "en": "Height in image pixels",
+    "fr": "Hauteur en pixels de l’image",
+    "es": "Alto en píxeles de la imagen"
+  },
+  "Textstil": {
+    "en": "Text style",
+    "fr": "Style du texte",
+    "es": "Estilo de texto"
+  },
+  "UntuShot · Bereich auswählen": {
+    "en": "UntuShot · Select region",
+    "fr": "UntuShot · Sélectionner une zone",
+    "es": "UntuShot · Seleccionar región"
+  },
+  "UntuShot · Bild gespeichert": {
+    "en": "UntuShot · Image saved",
+    "fr": "UntuShot · Image enregistrée",
+    "es": "UntuShot · Imagen guardada"
+  },
+  "UntuShot · Bearbeitet": {
+    "en": "UntuShot · Edited",
+    "fr": "UntuShot · Modifié",
+    "es": "UntuShot · Editado"
+  },
+  "Ebene ziehen, um die Reihenfolge zu ändern": {
+    "en": "Drag layer to change its order",
+    "fr": "Faire glisser le calque pour changer l’ordre",
+    "es": "Arrastra la capa para cambiar el orden"
+  },
+  "Ebene ausblenden": {
+    "en": "Hide layer",
+    "fr": "Masquer le calque",
+    "es": "Ocultar capa"
+  },
+  "Vorschau nicht verfügbar: {error}": {
+    "en": "Preview unavailable: {error}",
+    "fr": "Aperçu indisponible : {error}",
+    "es": "Vista previa no disponible: {error}"
+  },
+  "Ebene einblenden": {
+    "en": "Show layer",
+    "fr": "Afficher le calque",
+    "es": "Mostrar capa"
+  },
+  "Ganzes Bild — alle aufgenommenen Bildschirme": {
+    "en": "Entire image — all captured monitors",
+    "fr": "Image entière — tous les écrans capturés",
+    "es": "Imagen completa — todas las pantallas capturadas"
+  },
+  "Ganzes Bild": {
+    "en": "Entire image",
+    "fr": "Image entière",
+    "es": "Imagen completa"
+  },
+  "Eigener Ausschnitt": {
+    "en": "Custom crop",
+    "fr": "Cadrage personnalisé",
+    "es": "Recorte personalizado"
+  },
+  "Aufnahme gestoppt: Monitor-Anordnung geändert. Bitte Quelle prüfen und erneut starten.": {
+    "en": "Capture stopped: monitor layout changed. Check the source and start again.",
+    "fr": "Capture arrêtée : la disposition des écrans a changé. Vérifiez la source et recommencez.",
+    "es": "Captura detenida: cambió la disposición de las pantallas. Comprueba la fuente y vuelve a empezar."
+  },
+  "Monitor-Anordnung aktualisiert. Bitte die gewünschte Quelle prüfen.": {
+    "en": "Monitor layout updated. Please check the selected source.",
+    "fr": "Disposition des écrans actualisée. Vérifiez la source sélectionnée.",
+    "es": "Disposición de pantallas actualizada. Comprueba la fuente seleccionada."
+  },
+  "Ausschnitt übernommen · Zeichnen oder V zum Bearbeiten einzelner Objekte": {
+    "en": "Crop applied · Draw or press V to edit individual objects",
+    "fr": "Cadrage appliqué · Dessinez ou appuyez sur V pour modifier les objets",
+    "es": "Recorte aplicado · Dibuja o pulsa V para editar objetos"
+  },
+  "Bild gespeichert – Bearbeitung behalten?": {
+    "en": "Image saved — keep your editable work?",
+    "fr": "Image enregistrée — conserver le projet modifiable ?",
+    "es": "Imagen guardada: ¿conservar el trabajo editable?"
+  },
+  "Änderungen speichern?": {
+    "en": "Save changes?",
+    "fr": "Enregistrer les modifications ?",
+    "es": "¿Guardar los cambios?"
+  },
+  "Änderungen speichern": {
+    "en": "Save changes",
+    "fr": "Enregistrer les modifications",
+    "es": "Guardar cambios"
+  },
+  "Die PNG-Datei ist aktuell. Ein Projekt erhält zusätzlich das ursprüngliche Bild, den Ausschnitt und die einzeln bearbeitbaren Markierungen.": {
+    "en": "The PNG is up to date. A project also preserves the original image, crop and individually editable annotations.",
+    "fr": "Le PNG est à jour. Un projet conserve aussi l’image originale, le cadrage et les annotations modifiables séparément.",
+    "es": "El PNG está actualizado. Un proyecto también conserva la imagen original, el recorte y las anotaciones editables por separado."
+  },
+  "Als PNG speicherst du das fertige Bild zum Teilen. Ein Projekt erhält zusätzlich das ursprüngliche Bild und die einzeln bearbeitbaren Markierungen.": {
+    "en": "PNG saves the finished image to share. A project also preserves the original image and individually editable annotations.",
+    "fr": "Le PNG enregistre l’image finale à partager. Un projet conserve aussi l’image originale et les annotations modifiables séparément.",
+    "es": "PNG guarda la imagen final para compartir. Un proyecto también conserva la imagen original y las anotaciones editables por separado."
+  },
+  "Zurück": {
+    "en": "Back",
+    "fr": "Retour",
+    "es": "Volver"
+  },
+  "Ohne Projekt weiter": {
+    "en": "Continue without project",
+    "fr": "Continuer sans projet",
+    "es": "Continuar sin proyecto"
+  },
+  "Nicht speichern": {
+    "en": "Don't save",
+    "fr": "Ne pas enregistrer",
+    "es": "No guardar"
+  },
+  "Bild speichern": {
+    "en": "Save image",
+    "fr": "Enregistrer l’image",
+    "es": "Guardar imagen"
+  },
+  "Zum Ändern der Reihenfolge eine einzelne Ebene auswählen.": {
+    "en": "Select a single layer to change its order.",
+    "fr": "Sélectionnez un seul calque pour changer son ordre.",
+    "es": "Selecciona una sola capa para cambiar su orden."
+  },
+  "Duplizieren": {
+    "en": "Duplicate",
+    "fr": "Dupliquer",
+    "es": "Duplicar"
+  },
+  "Eine Ebene nach vorne": {
+    "en": "One layer forward",
+    "fr": "Avancer d’un calque",
+    "es": "Una capa adelante"
+  },
+  "Eine Ebene nach hinten": {
+    "en": "One layer backward",
+    "fr": "Reculer d’un calque",
+    "es": "Una capa atrás"
+  },
+  "Löschen": {
+    "en": "Delete",
+    "fr": "Supprimer",
+    "es": "Eliminar"
+  },
+  "Text bearbeiten": {
+    "en": "Edit text",
+    "fr": "Modifier le texte",
+    "es": "Editar texto"
+  },
+  "Strg+D": {
+    "en": "Ctrl+D",
+    "fr": "Ctrl+D",
+    "es": "Ctrl+D"
+  },
+  "Entf · mit Strg+Z rückgängig": {
+    "en": "Delete · Undo with Ctrl+Z",
+    "fr": "Suppr · Annuler avec Ctrl+Z",
+    "es": "Supr · Deshacer con Ctrl+Z"
+  },
+  "Projekt geöffnet · Strg+Alt+S speichert Änderungen in dieser Datei": {
+    "en": "Project opened · Ctrl+Alt+S saves changes to this file",
+    "fr": "Projet ouvert · Ctrl+Alt+S enregistre les modifications dans ce fichier",
+    "es": "Proyecto abierto · Ctrl+Alt+S guarda los cambios en este archivo"
+  },
+  "Bild geöffnet · Das Original bleibt unverändert": {
+    "en": "Image opened · The original remains unchanged",
+    "fr": "Image ouverte · L’original reste inchangé",
+    "es": "Imagen abierta · El original permanece intacto"
+  },
+  "Projekt öffnen": {
+    "en": "Open project",
+    "fr": "Ouvrir un projet",
+    "es": "Abrir proyecto"
+  },
+  "Bild oder Projekt öffnen": {
+    "en": "Open image or project",
+    "fr": "Ouvrir une image ou un projet",
+    "es": "Abrir imagen o proyecto"
+  },
+  "Öffnen": {
+    "en": "Open",
+    "fr": "Ouvrir",
+    "es": "Abrir"
+  },
+  "Bilder und UntuShot-Projekte": {
+    "en": "Images and UntuShot projects",
+    "fr": "Images et projets UntuShot",
+    "es": "Imágenes y proyectos de UntuShot"
+  },
+  "Alle Dateien": {
+    "en": "All files",
+    "fr": "Tous les fichiers",
+    "es": "Todos los archivos"
+  },
+  "Kein Bild geöffnet": {
+    "en": "No image open",
+    "fr": "Aucune image ouverte",
+    "es": "No hay ninguna imagen abierta"
+  },
+  "Projekt gespeichert: {}": {
+    "en": "Project saved: {}",
+    "fr": "Projet enregistré : {}",
+    "es": "Proyecto guardado: {}"
+  },
+  "Bearbeitbares Projekt speichern": {
+    "en": "Save editable project",
+    "fr": "Enregistrer le projet modifiable",
+    "es": "Guardar proyecto editable"
+  },
+  "Aufnahme in {remaining} Sekunden …": {
+    "en": "Capturing in {remaining} seconds …",
+    "fr": "Capture dans {remaining} secondes…",
+    "es": "Captura en {remaining} segundos…"
+  },
+  "Aufnahme läuft …": {
+    "en": "Capturing …",
+    "fr": "Capture en cours…",
+    "es": "Capturando…"
+  },
+  "Monitor nicht eindeutig zugeordnet · Bitte den gewünschten Bereich im Bild aufziehen": {
+    "en": "Monitor mapping unavailable · Draw the desired region in the image",
+    "fr": "Identification des écrans indisponible · Tracez la zone souhaitée dans l’image",
+    "es": "No se pueden identificar las pantallas · Dibuja la región deseada en la imagen"
+  },
+  "Bereich auswählen · Erst nach Bestätigung öffnet sich der Editor": {
+    "en": "Select region · The editor opens after confirmation",
+    "fr": "Sélectionnez la zone · L’éditeur s’ouvre après confirmation",
+    "es": "Selecciona la región · El editor se abre tras confirmar"
+  },
+  "Texteingabe rückgängig · Strg+Z": {
+    "en": "Undo text input · Ctrl+Z",
+    "fr": "Annuler la saisie · Ctrl+Z",
+    "es": "Deshacer entrada de texto · Ctrl+Z"
+  },
+  "Umbenennen rückgängig · Strg+Z · mit Wiederholen wiederherstellbar": {
+    "en": "Undo rename · Ctrl+Z · Redo restores the name",
+    "fr": "Annuler le renommage · Ctrl+Z · Rétablir restaure le nom",
+    "es": "Deshacer cambio de nombre · Ctrl+Z · Rehacer restaura el nombre"
+  },
+  "PNG gespeichert: {}": {
+    "en": "PNG saved: {}",
+    "fr": "PNG enregistré : {}",
+    "es": "PNG guardado: {}"
+  },
+  "Screenshot als PNG speichern": {
+    "en": "Save screenshot as PNG",
+    "fr": "Enregistrer la capture en PNG",
+    "es": "Guardar captura como PNG"
+  },
+  "Speichern": {
+    "en": "Save",
+    "fr": "Enregistrer",
+    "es": "Guardar"
+  },
+  "PNG-Bild (*.png)": {
+    "en": "PNG image (*.png)",
+    "fr": "Image PNG (*.png)",
+    "es": "Imagen PNG (*.png)"
+  },
+  "PNG exportiert: {} · Ebenen bleiben nur im Projekt bearbeitbar": {
+    "en": "PNG exported: {} · Layers stay editable only in a project",
+    "fr": "PNG exporté : {} · Seul un projet conserve les calques modifiables",
+    "es": "PNG exportado: {} · Solo un proyecto conserva las capas editables"
+  },
+  "Bitte zuerst eine Auswahl aufziehen": {
+    "en": "Draw a selection first",
+    "fr": "Tracez d’abord une sélection",
+    "es": "Dibuja primero una selección"
+  },
+  "Bild kopiert · UntuShot bis zum Einfügen geöffnet lassen, sofern kein Clipboard-Manager läuft.": {
+    "en": "Image copied · Keep UntuShot open until pasting unless a clipboard manager is running.",
+    "fr": "Image copiée · Gardez UntuShot ouvert jusqu’au collage, sauf si un gestionnaire de presse-papiers est actif.",
+    "es": "Imagen copiada · Mantén UntuShot abierto hasta pegar, salvo que haya un gestor del portapapeles activo."
+  },
+  "Bitte zuerst eine Auswahl aufziehen · M": {
+    "en": "Draw a selection first · M",
+    "fr": "Tracez d’abord une sélection · M",
+    "es": "Dibuja primero una selección · M"
+  },
+  "Auswahl als neue Ebene kopiert · An den Griffen vergrößern · Rand und Schatten rechts einstellen": {
+    "en": "Selection copied to a new layer · Drag handles to enlarge · Set border and shadow on the right",
+    "fr": "Sélection copiée dans un nouveau calque · Agrandissez avec les poignées · Bordure et ombre à droite",
+    "es": "Selección copiada a una capa nueva · Amplía con los tiradores · Borde y sombra a la derecha"
+  },
+  "Bild aus der Zwischenablage wird geladen …": {
+    "en": "Loading clipboard image …",
+    "fr": "Chargement de l’image du presse-papiers…",
+    "es": "Cargando imagen del portapapeles…"
+  },
+  "Eingefügtes Bild": {
+    "en": "Pasted image",
+    "fr": "Image collée",
+    "es": "Imagen pegada"
+  },
+  "Bild als neue Ebene eingefügt · Verschieben, vergrößern und mit Rand oder Schatten hervorheben": {
+    "en": "Image pasted as a new layer · Move, resize and highlight with border or shadow",
+    "fr": "Image collée comme nouveau calque · Déplacez, redimensionnez et ajoutez une bordure ou une ombre",
+    "es": "Imagen pegada como capa nueva · Mueve, redimensiona y destaca con borde o sombra"
+  },
+  "Bild rechts anfügen": {
+    "en": "Append image to the right",
+    "fr": "Ajouter une image à droite",
+    "es": "Añadir imagen a la derecha"
+  },
+  "Anfügen": {
+    "en": "Append",
+    "fr": "Ajouter",
+    "es": "Añadir"
+  },
+  "Bilder (PNG, JPEG)": {
+    "en": "Images (PNG, JPEG)",
+    "fr": "Images (PNG, JPEG)",
+    "es": "Imágenes (PNG, JPEG)"
+  },
+  "Bildebene rechts angefügt · Ziehen: verschieben · Acht Griffe: proportional skalieren · Strg+Z: zurück": {
+    "en": "Image appended on the right · Drag to move · Eight handles to resize proportionally · Ctrl+Z: undo",
+    "fr": "Image ajoutée à droite · Glisser pour déplacer · Huit poignées pour redimensionner · Ctrl+Z : annuler",
+    "es": "Imagen añadida a la derecha · Arrastra para mover · Ocho tiradores para redimensionar · Ctrl+Z: deshacer"
+  },
+  "Bild übernommen · Markierungen hinzufügen oder als PNG speichern": {
+    "en": "Image imported · Add annotations or save as PNG",
+    "fr": "Image importée · Ajoutez des annotations ou enregistrez en PNG",
+    "es": "Imagen importada · Añade anotaciones o guarda como PNG"
+  },
+  "Text direkt bearbeiten · Enter übernimmt · Shift+Enter: neue Zeile · Esc verwirft": {
+    "en": "Edit text in place · Enter applies · Shift+Enter: new line · Esc discards",
+    "fr": "Modifier le texte sur place · Entrée applique · Maj+Entrée : nouvelle ligne · Échap annule",
+    "es": "Editar texto directamente · Intro aplica · Mayús+Intro: nueva línea · Esc descarta"
+  },
+  "Zeichenfehler: {error}": {
+    "en": "Drawing error: {error}",
+    "fr": "Erreur de dessin : {error}",
+    "es": "Error de dibujo: {error}"
+  },
+  "UntuShot · Neue Aufnahme starten oder --open BILD.png verwenden": {
+    "en": "UntuShot · Start a new capture or use --open IMAGE.png",
+    "fr": "UntuShot · Lancez une capture ou utilisez --open IMAGE.png",
+    "es": "UntuShot · Inicia una captura o usa --open IMAGEN.png"
+  },
+  "Bereich mit der Maus aufziehen": {
+    "en": "Drag to select a region",
+    "fr": "Faites glisser pour sélectionner une zone",
+    "es": "Arrastra para seleccionar una región"
+  },
+  "Linienstärke auswählen · Vorschau und exakter Pixelwert": {
+    "en": "Choose stroke width · Preview and exact pixel value",
+    "fr": "Choisir l’épaisseur · Aperçu et valeur exacte en pixels",
+    "es": "Elegir grosor · Vista previa y valor exacto en píxeles"
+  },
+  "Linienstärke": {
+    "en": "Stroke width",
+    "fr": "Épaisseur du trait",
+    "es": "Grosor del trazo"
+  },
+  "Vorschau 1:2 · Werte in Bildpixeln": {
+    "en": "Preview at 1:2 · Values in image pixels",
+    "fr": "Aperçu à 1:2 · Valeurs en pixels de l’image",
+    "es": "Vista previa a 1:2 · Valores en píxeles de la imagen"
+  },
+  "{value} Bildpixel": {
+    "en": "{value} image pixels",
+    "fr": "{value} pixels de l’image",
+    "es": "{value} píxeles de la imagen"
+  },
+  "Eigene Stärke · px": {
+    "en": "Custom width · px",
+    "fr": "Épaisseur personnalisée · px",
+    "es": "Grosor personalizado · px"
+  },
+  "Objekt bearbeiten": {
+    "en": "Edit object",
+    "fr": "Modifier l’objet",
+    "es": "Editar objeto"
+  },
+  "Zuschneiden": {
+    "en": "Crop",
+    "fr": "Recadrer",
+    "es": "Recortar"
+  },
+  "Stift": {
+    "en": "Pen",
+    "fr": "Stylo",
+    "es": "Lápiz"
+  },
+  "Linie": {
+    "en": "Line",
+    "fr": "Ligne",
+    "es": "Línea"
+  },
+  "Pfeil": {
+    "en": "Arrow",
+    "fr": "Flèche",
+    "es": "Flecha"
+  },
+  "Rechteck": {
+    "en": "Rectangle",
+    "fr": "Rectangle",
+    "es": "Rectángulo"
+  },
+  "Ellipse": {
+    "en": "Ellipse",
+    "fr": "Ellipse",
+    "es": "Elipse"
+  },
+  "Marker": {
+    "en": "Highlighter",
+    "fr": "Surligneur",
+    "es": "Resaltador"
+  },
+  "Schwärzen": {
+    "en": "Redact",
+    "fr": "Masquer",
+    "es": "Ocultar datos"
+  },
+  "Text": {
+    "en": "Text",
+    "fr": "Texte",
+    "es": "Texto"
+  },
+  "Auswahl": {
+    "en": "Select",
+    "fr": "Sélectionner",
+    "es": "Seleccionar"
+  },
+  "Ungültige Ebenengröße": {
+    "en": "Invalid layer size",
+    "fr": "Dimensions du calque invalides",
+    "es": "Tamaño de capa no válido"
+  },
+  "Kopierter Ausschnitt": {
+    "en": "Copied region",
+    "fr": "Zone copiée",
+    "es": "Región copiada"
+  },
+  "Ausgangsbild": {
+    "en": "Original image",
+    "fr": "Image originale",
+    "es": "Imagen original"
+  },
+  "Zu viele Bildebenen im Speicher. Bitte das Projekt speichern und erneut öffnen, um den Rückgängig-Verlauf freizugeben.": {
+    "en": "Too many image layers in memory. Save and reopen the project to release the undo history.",
+    "fr": "Trop de calques d’image en mémoire. Enregistrez puis rouvrez le projet pour libérer l’historique d’annulation.",
+    "es": "Demasiadas capas de imagen en memoria. Guarda y vuelve a abrir el proyecto para liberar el historial de deshacer."
+  },
+  "{} · Kopie": {
+    "en": "{} · Copy",
+    "fr": "{} · Copie",
+    "es": "{} · Copia"
+  },
+  "Bildebene fehlt": {
+    "en": "Image layer missing",
+    "fr": "Calque d’image manquant",
+    "es": "Falta la capa de imagen"
+  },
+  "Ungültige Vorschauskalierung": {
+    "en": "Invalid preview scale",
+    "fr": "Échelle d’aperçu invalide",
+    "es": "Escala de vista previa no válida"
+  },
+  "Ebene fehlt": {
+    "en": "Layer missing",
+    "fr": "Calque manquant",
+    "es": "Falta la capa"
+  },
+  "Leere Auswahl": {
+    "en": "Empty selection",
+    "fr": "Sélection vide",
+    "es": "Selección vacía"
+  },
+  "X {}   Y {} · 10×": {
+    "en": "X {}   Y {} · 10×",
+    "fr": "X {}   Y {} · 10×",
+    "es": "X {}   Y {} · 10×"
+  },
+  "Unbekannte Projektversion": {
+    "en": "Unknown project version",
+    "fr": "Version de projet inconnue",
+    "es": "Versión de proyecto desconocida"
+  },
+  "Ungültige Annotation im Projekt": {
+    "en": "Invalid annotation in project",
+    "fr": "Annotation invalide dans le projet",
+    "es": "Anotación no válida en el proyecto"
+  },
+  "Ungültige Monitorgeometrie im Projekt": {
+    "en": "Invalid monitor geometry in project",
+    "fr": "Géométrie des écrans invalide dans le projet",
+    "es": "Geometría de pantallas no válida en el proyecto"
+  },
+  "Bildebenen im Projekt sind zu groß": {
+    "en": "Image layers in the project are too large",
+    "fr": "Les calques d’image du projet sont trop grands",
+    "es": "Las capas de imagen del proyecto son demasiado grandes"
+  },
+  "Ungültige Bildebene im Projekt": {
+    "en": "Invalid image layer in project",
+    "fr": "Calque d’image invalide dans le projet",
+    "es": "Capa de imagen no válida en el proyecto"
+  },
+  "Ungültiger Bildausschnitt": {
+    "en": "Invalid crop",
+    "fr": "Cadrage invalide",
+    "es": "Recorte no válido"
+  },
+  "Display 1": {
+    "en": "Display 1",
+    "fr": "Écran 1",
+    "es": "Pantalla 1"
+  },
+  "1440 × 900 · Querformat": {
+    "en": "1440 × 900 · Landscape",
+    "fr": "1440 × 900 · Paysage",
+    "es": "1440 × 900 · Horizontal"
+  },
+  "Display 2": {
+    "en": "Display 2",
+    "fr": "Écran 2",
+    "es": "Pantalla 2"
+  },
+  "960 × 1100 · Hochformat": {
+    "en": "960 × 1100 · Portrait",
+    "fr": "960 × 1100 · Portrait",
+    "es": "960 × 1100 · Vertical"
+  },
+  "Demo links": {
+    "en": "Demo left",
+    "fr": "Démo gauche",
+    "es": "Demo izquierda"
+  },
+  "Demo rechts": {
+    "en": "Demo right",
+    "fr": "Démo droite",
+    "es": "Demo derecha"
+  },
+  "Die Arbeitsfläche wird zu groß (maximal 32.767 Pixel pro Seite und 64 Megapixel)": {
+    "en": "Canvas too large (maximum 32,767 pixels per side and 64 megapixels)",
+    "fr": "Zone de travail trop grande (32 767 pixels par côté et 64 mégapixels maximum)",
+    "es": "Lienzo demasiado grande (máximo de 32.767 píxeles por lado y 64 megapíxeles)"
+  },
+  "Die Bildebene benötigt als PNG mehr als 128 MiB. Bitte einen kleineren Ausschnitt wählen.": {
+    "en": "The image layer exceeds 128 MiB as PNG. Please select a smaller region.",
+    "fr": "Le calque dépasse 128 Mio en PNG. Sélectionnez une zone plus petite.",
+    "es": "La capa supera los 128 MiB como PNG. Selecciona una región más pequeña."
+  },
+  "UntuShot – Screenshot und Annotation für Linux/Wayland": {
+    "en": "UntuShot – Screenshots and annotations for Linux/Wayland",
+    "fr": "UntuShot – Captures et annotations pour Linux/Wayland",
+    "es": "UntuShot – Capturas y anotaciones para Linux/Wayland"
+  },
+  "UntuShot: GTK konnte keinen Bildschirm öffnen: {error}\nIn einer grafischen Wayland-Sitzung starten.": {
+    "en": "UntuShot: GTK could not open a display: {error}\nStart in a graphical Wayland session.",
+    "fr": "UntuShot : GTK n’a pas pu ouvrir d’écran : {error}\nDémarrez dans une session graphique Wayland.",
+    "es": "UntuShot: GTK no pudo abrir una pantalla: {error}\nInicia en una sesión gráfica de Wayland."
+  },
+  "{}: {} — {}x{} bei {},{} · Skalierung {}": {
+    "en": "{}: {} — {}x{} at {},{} · Scale {}",
+    "fr": "{} : {} — {}x{} à {},{} · Échelle {}",
+    "es": "{}: {} — {}x{} en {},{} · Escala {}"
+  },
+  "Keine Monitore gefunden.": {
+    "en": "No monitors found.",
+    "fr": "Aucun écran trouvé.",
+    "es": "No se encontraron pantallas."
+  },
+  "Ungültige Bildgröße": {
+    "en": "Invalid image size",
+    "fr": "Dimensions de l’image invalides",
+    "es": "Tamaño de imagen no válido"
+  },
+  "Die Bilddatei ist zu groß (maximal {} MiB)": {
+    "en": "Image file too large (maximum {} MiB)",
+    "fr": "Fichier image trop grand ({} Mio maximum)",
+    "es": "Archivo de imagen demasiado grande (máximo {} MiB)"
+  },
+  "Kein lesbares PNG- oder JPEG-Bild": {
+    "en": "Not a readable PNG or JPEG image",
+    "fr": "Image PNG ou JPEG illisible",
+    "es": "No es una imagen PNG o JPEG legible"
+  },
+  "Das Bild überschreitet die Importgrenze: maximal {} Millionen Pixel und 32.767 Pixel je Seite.": {
+    "en": "Image exceeds the import limit: maximum {} million pixels and 32,767 pixels per side.",
+    "fr": "L’image dépasse la limite d’import : {} millions de pixels et 32 767 pixels par côté maximum.",
+    "es": "La imagen supera el límite de importación: máximo {} millones de píxeles y 32.767 píxeles por lado."
+  },
+  "Bild konnte nicht geöffnet werden: {}": {
+    "en": "Could not open image: {}",
+    "fr": "Impossible d’ouvrir l’image : {}",
+    "es": "No se pudo abrir la imagen: {}"
+  },
+  "Ebenenname ändern · Enter bestätigen · Esc abbrechen": {
+    "en": "Rename layer · Enter to confirm · Esc to cancel",
+    "fr": "Renommer le calque · Entrée pour confirmer · Échap pour annuler",
+    "es": "Renombrar capa · Intro para confirmar · Esc para cancelar"
+  },
+  "Ebene umbenannt · Strg+Z: rückgängig": {
+    "en": "Layer renamed · Ctrl+Z: undo",
+    "fr": "Calque renommé · Ctrl+Z : annuler",
+    "es": "Capa renombrada · Ctrl+Z: deshacer"
+  },
+  "Bereit": {
+    "en": "Ready",
+    "fr": "Prêt",
+    "es": "Listo"
+  },
+  "Umbenennen abgebrochen": {
+    "en": "Rename cancelled",
+    "fr": "Renommage annulé",
+    "es": "Cambio de nombre cancelado"
+  },
+  "Ebenenreihenfolge geändert · Strg+Z: rückgängig": {
+    "en": "Layer order changed · Ctrl+Z: undo",
+    "fr": "Ordre des calques modifié · Ctrl+Z : annuler",
+    "es": "Orden de capas cambiado · Ctrl+Z: deshacer"
+  },
+  "Im Desktopdialog wählen": {
+    "en": "Choose in the desktop dialog",
+    "fr": "Choisir dans la boîte de dialogue du bureau",
+    "es": "Elegir en el diálogo del escritorio"
+  },
+  "Den gewünschten Bildschirm bitte im Desktopdialog auswählen.": {
+    "en": "Choose the desired monitor in the desktop dialog.",
+    "fr": "Choisissez l’écran souhaité dans la boîte de dialogue du bureau.",
+    "es": "Elige la pantalla deseada en el diálogo del escritorio."
+  },
+  "UntuShot-Projekte (*.untushot, *.rustshot)": {
+    "en": "UntuShot projects (*.untushot, *.rustshot)",
+    "fr": "Projets UntuShot (*.untushot, *.rustshot)",
+    "es": "Proyectos de UntuShot (*.untushot, *.rustshot)"
+  },
+  "UntuShot-Projekt (*.untushot)": {
+    "en": "UntuShot project (*.untushot)",
+    "fr": "Projet UntuShot (*.untushot)",
+    "es": "Proyecto de UntuShot (*.untushot)"
+  },
+  "Auto: grim versuchen, sonst XDG Desktop Portal": {
+    "en": "Auto: try grim, then the XDG Desktop Portal",
+    "fr": "Auto : essayer grim, puis le portail XDG",
+    "es": "Auto: probar grim y después el portal XDG"
+  },
+  "Bilddatei aus „Öffnen mit“ (alternativ --open)": {
+    "en": "Image file from “Open with” (or --open)",
+    "fr": "Image ouverte avec « Ouvrir avec » (ou --open)",
+    "es": "Imagen desde «Abrir con» (o --open)"
+  },
+  "Ein vorhandenes Bild bearbeiten": {
+    "en": "Edit an existing image",
+    "fr": "Modifier une image existante",
+    "es": "Editar una imagen existente"
+  },
+  "Zielpfad für den Speichern-Dialog": {
+    "en": "Destination for the save dialog",
+    "fr": "Destination de la boîte de dialogue d’enregistrement",
+    "es": "Destino del diálogo de guardado"
+  },
+  "Verzögerung vor der Aufnahme in Sekunden (0–60)": {
+    "en": "Delay before capture in seconds (0–60)",
+    "fr": "Délai avant capture en secondes (0–60)",
+    "es": "Retardo antes de capturar en segundos (0–60)"
+  },
+  "Monitor direkt auswählen (1-basiert, siehe --list-monitors)": {
+    "en": "Select a monitor directly (1-based, see --list-monitors)",
+    "fr": "Sélectionner un écran directement (à partir de 1, voir --list-monitors)",
+    "es": "Seleccionar una pantalla (desde 1, ver --list-monitors)"
+  },
+  "Erkannte Monitore mit logischen Koordinaten anzeigen": {
+    "en": "List detected monitors and logical coordinates",
+    "fr": "Afficher les écrans détectés et leurs coordonnées logiques",
+    "es": "Mostrar las pantallas detectadas y sus coordenadas lógicas"
+  },
+  "Editor als Fenster statt im Vollbild öffnen": {
+    "en": "Open the editor in a window instead of fullscreen",
+    "fr": "Ouvrir l’éditeur dans une fenêtre plutôt qu’en plein écran",
+    "es": "Abrir el editor en una ventana en lugar de pantalla completa"
+  },
+  "Synthetischen Multimonitor-Desktop öffnen, ohne Bildschirmaufnahme": {
+    "en": "Open a synthetic multi-monitor demo without capturing the screen",
+    "fr": "Ouvrir une démo multi-écran synthétique sans capture",
+    "es": "Abrir una demo multipantalla sintética sin capturar la pantalla"
+  },
+  "Im Hintergrund mit Tray-Symbol starten": {
+    "en": "Start in the background with a tray icon",
+    "fr": "Démarrer en arrière-plan avec une icône de notification",
+    "es": "Iniciar en segundo plano con un icono de bandeja"
+  },
+  "Direkt aufnehmen: region, full oder system": {
+    "en": "Capture directly: region, full or system",
+    "fr": "Capturer directement : region, full ou system",
+    "es": "Capturar directamente: region, full o system"
+  },
+  "Hintergrundprozess nach dem Sichern beenden": {
+    "en": "Quit the background process after saving",
+    "fr": "Quitter le processus d’arrière-plan après sauvegarde",
+    "es": "Cerrar el proceso en segundo plano tras guardar"
+  },
+  "Status des Hintergrundprozesses ausgeben": {
+    "en": "Show background process status",
+    "fr": "Afficher l’état du processus d’arrière-plan",
+    "es": "Mostrar el estado del proceso en segundo plano"
+  },
+  "Laufende Aufnahme abbrechen": {
+    "en": "Cancel the current capture",
+    "fr": "Annuler la capture en cours",
+    "es": "Cancelar la captura actual"
+  }
+}
