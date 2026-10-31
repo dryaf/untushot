@@ -18,6 +18,9 @@ def main():
         raise SystemExit('Install Podman or Docker to build release packages.')
     toolchain = subprocess.check_output(['rustc', '--print', 'sysroot'], text=True).strip()
     cargo_home = Path(os.environ.get('CARGO_HOME', Path.home() / '.cargo')).resolve()
+    # Keep the output directory host-owned: Docker creates files as root, but
+    # the CI runner must still be able to add release notes after the build.
+    (root / 'dist').mkdir(exist_ok=True)
     subprocess.run(['cargo', 'fetch', '--locked', '--target', 'x86_64-unknown-linux-gnu'], cwd=root, check=True)
     subprocess.run([engine, 'build', '-f', 'packaging/Containerfile', '-t',
                     'localhost/untushot-packager:jammy', 'packaging'], cwd=root, check=True)
