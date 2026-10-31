@@ -21,7 +21,9 @@ def main():
     subprocess.run(['cargo', 'fetch', '--locked', '--target', 'x86_64-unknown-linux-gnu'], cwd=root, check=True)
     subprocess.run([engine, 'build', '-f', 'packaging/Containerfile', '-t',
                     'localhost/untushot-packager:jammy', 'packaging'], cwd=root, check=True)
-    command = [engine, 'run', '--rm', '--init', '-v', f'{root}:/workspace',
+    # Broadway uses shared-memory image surfaces. The default 64 MiB can run
+    # out after the GUI suites and SIGBUS the packaged editor's startup check.
+    command = [engine, 'run', '--rm', '--init', '--shm-size=256m', '-v', f'{root}:/workspace',
                '-v', f'{toolchain}:/opt/rust:ro',
                '-v', f'{cargo_home / "registry"}:/opt/registry:ro',
                'localhost/untushot-packager:jammy', 'python3', 'packaging/build_release.py']

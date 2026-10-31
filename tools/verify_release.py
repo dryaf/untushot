@@ -21,6 +21,10 @@ def run(*args, **kwargs):
 
 def smoke(launcher, directory):
     directory.mkdir()
+    shared_memory = os.statvfs('/dev/shm')
+    print(f'Checking {launcher.name}: '
+          f'{shared_memory.f_bavail * shared_memory.f_frsize // 1048576} MiB shared memory available',
+          flush=True)
     environment = os.environ.copy()
     for key in ('GTK_PATH', 'GTK_EXE_PREFIX', 'GTK_DATA_PREFIX', 'GTK_IM_MODULE_FILE',
                 'GIO_MODULE_DIR', 'GIO_EXTRA_MODULES', 'GI_TYPELIB_PATH',

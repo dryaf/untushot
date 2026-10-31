@@ -213,6 +213,9 @@ This builds an Ubuntu 22.04 container using `packaging/Containerfile`, mounts th
 active Rust toolchain and cached Cargo registry read-only, and writes to
 `target/packages/` and `dist/`. Rust 1.75.0 is used for release builds. The host's
 installed application, clipboard and desktop settings are not changed.
+The container reserves a 256 MiB shared-memory limit for Broadway's image
+surfaces. Package startup checks also use a private D-Bus session and isolated
+home/state directories.
 
 The builder compiles the optimized application, runs Rust/security and installer
 tests plus the four-language, editor, layer, clipboard, portal, capture-error,
