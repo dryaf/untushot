@@ -861,14 +861,15 @@ pub(super) fn verify(e: &Rc<Editor>) {
         e.state.borrow().document.as_ref().unwrap().annotations(),
         original
     );
-    e.select_new_image(0, "Veraltete Eingabe prüfen");
+    let styled = original.iter().position(|a| a.effects.border).unwrap();
+    e.select_new_image(styled, "Veraltete Eingabe prüfen");
     e.begin_layer_rename();
     e.layer_name.set_text("Vor Eigenschaftsänderung übernehmen");
     let border = e.border_width.value();
     e.border_width.grab_focus();
     e.border_width.set_value(border + 1.);
     assert_eq!(
-        e.state.borrow().document.as_ref().unwrap().annotations()[0].name(),
+        e.state.borrow().document.as_ref().unwrap().annotations()[styled].name(),
         "Vor Eigenschaftsänderung übernehmen"
     );
     e.area.grab_focus();

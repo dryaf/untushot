@@ -11,13 +11,13 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=('clipboard', 'editor', 'layers', 'showcase', 'localization', 'capture-errors', 'ux-changes', 'portal', 'autosave'), default='clipboard')
+    parser.add_argument('--suite', choices=('clipboard', 'editor', 'layers', 'showcase', 'localization', 'capture-errors', 'ux-changes', 'portal', 'autosave', 'pixel-edits', 'background'), default='clipboard')
     parser.add_argument('--release', action='store_true', help='Test optimized release builds')
     parser.add_argument('--language', choices=('en', 'de', 'fr', 'es'))
     args = parser.parse_args()
     suite = args.suite
     language = args.language or ('en' if suite == 'showcase' else 'de')
-    test = {'clipboard': 'clipboard_transport_isolated',
+    test = {'clipboard': 'clipboard_transport_isolated', 'pixel-edits': 'gtk_pixel_edits', 'background': 'gtk_background_layer',
             'editor': 'gtk_editor_workflow', 'layers': 'gtk_many_layers',
             'showcase': 'record_feature_showcase', 'localization': 'gtk_localized_ui',
             'capture-errors': 'gtk_capture_error_workflow', 'ux-changes': 'gtk_ux_changes', 'portal': 'gtk_portal_capture', 'autosave': 'gtk_autosave_workflow'}[suite]

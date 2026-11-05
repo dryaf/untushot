@@ -67,6 +67,14 @@ pub fn widget(name: &'static str) -> gtk::Widget {
             }
         };
         match name {
+            "fill" => {
+                line(&[(3., 9.), (10., 2.), (17., 9.), (10., 16.), (3., 9.)]);
+                line(&[(6., 2.), (10., 6.)]);
+                line(&[(3., 9.), (17., 9.)]);
+                cr.move_to(17., 12.);
+                cr.curve_to(13., 17., 20., 19., 17., 12.);
+                let _ = cr.fill();
+            }
             "selection" => {
                 cr.set_dash(&[3., 2.], 0.);
                 cr.rectangle(2., 3., 16., 14.);
@@ -385,6 +393,8 @@ pub fn tool(tool: crate::document::Tool) -> &'static str {
     use crate::document::Tool::*;
     match tool {
         Marquee => "selection",
+        Fill => "fill",
+        Erase => "trash",
         Move => "move",
         Select => "crop",
         Pen => "pen",

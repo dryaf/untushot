@@ -2458,5 +2458,55 @@
     "en": "Export a PNG to share. Projects keep the original image and every layer.",
     "fr": "Exportez un PNG pour le partager. Les projets conservent l’image originale et tous les calques.",
     "es": "Exporta un PNG para compartir. Los proyectos conservan la imagen original y todas las capas."
+  },
+  "Füllen": {
+    "en": "Fill",
+    "fr": "Remplir",
+    "es": "Rellenar"
+  },
+  "Füllung": {
+    "en": "Fill",
+    "fr": "Remplissage",
+    "es": "Relleno"
+  },
+  "Gelöschte Auswahl": {
+    "en": "Deleted selection",
+    "fr": "Sélection effacée",
+    "es": "Selección borrada"
+  },
+  "Auswahl löschen": {
+    "en": "Delete selection",
+    "fr": "Effacer la sélection",
+    "es": "Borrar selección"
+  },
+  "Ausgewählte Pixel transparent machen · Entf / Rücktaste": {
+    "en": "Clear selected pixels to transparency · Delete / Backspace",
+    "fr": "Rendre les pixels sélectionnés transparents · Suppr / Retour arrière",
+    "es": "Hacer transparentes los píxeles seleccionados · Supr / Retroceso"
+  },
+  "V / M / F / 1–9": {
+    "en": "V / M / F / 1–9",
+    "fr": "V / M / F / 1–9",
+    "es": "V / M / F / 1–9"
+  },
+  "Entf / Rücktaste": {
+    "en": "Delete / Backspace",
+    "fr": "Suppr / Retour arrière",
+    "es": "Supr / Retroceso"
+  },
+  "Auswahl oder ausgewählte Ebenen löschen": {
+    "en": "Delete selection or selected layers",
+    "fr": "Effacer la sélection ou les calques sélectionnés",
+    "es": "Borrar la selección o las capas seleccionadas"
+  },
+  "Zeichenfläche · F6 · Werkzeuge mit V, M, F oder 1–9 wählen": {
+    "en": "Canvas · F6 · Choose tools with V, M, F or 1–9",
+    "fr": "Zone de dessin · F6 · Choisir un outil avec V, M, F ou 1–9",
+    "es": "Lienzo · F6 · Elegir herramientas con V, M, F o 1–9"
+  },
+  "Hintergrund": {
+    "en": "Background",
+    "fr": "Arrière-plan",
+    "es": "Fondo"
   }
 }

@@ -232,6 +232,11 @@ to select a range. Double-click a name or press **F2** to rename it in place.
 Drag a row to reorder it: insertion guides show the target, and the list scrolls
 near its edges. The eye icon hides a layer without deleting it.
 
+The original screenshot or opened image starts as a **Background** layer. You can
+select, move, resize, hide, duplicate, reorder, rename, or delete it like any other
+image layer. Moving or deleting it reveals transparency while the canvas keeps its
+size. Existing projects gain this layer automatically when opened.
+
 ![Layer selection, inline renaming, drag-and-drop insertion guides and visibility controls](docs/media/07-layers.gif)
 
 </details>
@@ -421,6 +426,8 @@ This README and all feature-tour GIFs use English.
 | --- | --- |
 | Capture from the desktop¹ / new capture in the editor | `Ctrl+Shift+X` / `Ctrl+N` |
 | Move objects / select pixels / crop | `V` / `M` / `1` |
+| Fill a connected area with the current color | `F`, then click the area |
+| Clear selected pixels to transparency | `Delete` or `Backspace` with the pixel selection tool (`M`) |
 | Pen / line / arrow / rectangle / ellipse / highlighter / redact / text | `2` through `9` |
 | Copy pixels to a new layer / paste an image layer | `Ctrl+J` / `Ctrl+V` |
 | Import clipboard image with preview / append image on the right | `Ctrl+Shift+V` / `Ctrl+I` |
@@ -436,6 +443,12 @@ This README and all feature-tour GIFs use English.
 | Save editable project / save editable project as | `Ctrl+Alt+S` / `Ctrl+Alt+Shift+S` |
 | Apply / cancel the current edit | `Enter` / `Esc` |
 | Fullscreen / close window / quit completely | `F11` / `Ctrl+W` / `Ctrl+Q` |
+
+Select pixels with `M`, then use **Delete selection** or press `Delete` to clear
+the visible content in that rectangle. Use **Fill** (`F`) and click to fill a
+connected area of the same color, including transparent space, with the current
+color. Both actions respect the crop, support undo/redo, and are saved in editable
+projects. Deletions retain the underlying layers; fills create a new image layer.
 
 ¹ Set up by the supported desktop integration; other desktops can bind the same
 command manually. Closing the window quits UntuShot by default. Enable **Keep running

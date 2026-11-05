@@ -222,8 +222,12 @@ impl Editor {
                 crate::i18n::tr("Rückgängig / Wiederholen"),
             ),
             (
-                crate::i18n::tr("V / M / 1–9"),
+                crate::i18n::tr("V / M / F / 1–9"),
                 crate::i18n::tr("Werkzeug wählen (Zeichenfläche)"),
+            ),
+            (
+                crate::i18n::tr("Entf / Rücktaste"),
+                crate::i18n::tr("Auswahl oder ausgewählte Ebenen löschen"),
             ),
             (
                 crate::i18n::tr("Pfeile / Umschalt+Pfeile"),

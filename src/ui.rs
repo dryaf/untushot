@@ -181,6 +181,7 @@ pub(crate) struct Editor {
     selection_bar: gtk::Box,
     copy_selection_layer: gtk::Button,
     copy_selection: gtk::Button,
+    delete_selection: gtk::Button,
     paste_layer_button: gtk::Button,
     image_effects: gtk::Box,
     border_enabled: gtk::CheckButton,
@@ -232,7 +233,6 @@ pub(crate) struct Editor {
     copy: gtk::Button,
     paste: gtk::Button,
     append_image: gtk::Button,
-    base: gtk::Box,
     tools: Vec<gtk::RadioButton>,
     state: RefCell<State>,
     args: RefCell<Args>,
@@ -779,7 +779,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     area.set_can_focus(true);
     icons::accessible_name(
         &area,
-        crate::i18n::tr("Zeichenfläche · F6 · Werkzeuge mit V, M oder 1–9 wählen"),
+        crate::i18n::tr("Zeichenfläche · F6 · Werkzeuge mit V, M, F oder 1–9 wählen"),
     );
     area.add_events(
         gdk::EventMask::BUTTON_PRESS_MASK
@@ -932,16 +932,6 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         ),
     );
     layer_options.pack_start(&align, false, false, 0);
-    let base = icons::content("monitor", crate::i18n::tr("Hintergrundbild"));
-    // Match the inset of the editable layer rows above.
-    base.set_border_width(3);
-    base.set_tooltip_text(Some(
-        "Dein Screenshot liegt unter den Markierungen. Pfeile, Formen und Text \
-         kannst du darüber hinzufügen und einzeln bearbeiten. Das Hintergrundbild \
-         lässt sich nicht wie eine Markierung verschieben oder löschen.",
-    ));
-    base.style_context().add_class("muted");
-    layer_options.pack_start(&base, false, false, 2);
     let selection_label = caption(crate::i18n::tr("Eigenschaften"));
     let property_heading = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     property_heading.pack_start(&selection_label, true, true, 0);
@@ -1084,6 +1074,11 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         crate::i18n::tr("Auswahl kopieren"),
         crate::i18n::tr("Sichtbaren Inhalt der Auswahl kopieren · Strg+C"),
     );
+    let delete_selection = icon_button(
+        "trash",
+        crate::i18n::tr("Auswahl löschen"),
+        crate::i18n::tr("Ausgewählte Pixel transparent machen · Entf / Rücktaste"),
+    );
     let copy_selection_layer = button(
         crate::i18n::tr("Als neue Ebene · Strg+J"),
         crate::i18n::tr("Sichtbaren Inhalt kopieren, Original beibehalten"),
@@ -1093,6 +1088,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         .add_class("suggested-action");
     selection_bar.pack_end(&copy_selection_layer, false, false, 0);
     selection_bar.pack_end(&copy_selection, false, false, 0);
+    selection_bar.pack_end(&delete_selection, false, false, 0);
     page.pack_start(&selection_bar, false, false, 0);
     let magnifier = gtk::CheckButton::with_label(crate::i18n::tr("Pixellupe"));
     magnifier.set_active(true);
@@ -1192,6 +1188,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         selection_bar,
         copy_selection_layer,
         copy_selection,
+        delete_selection,
         paste_layer_button,
         image_effects,
         border_enabled,
@@ -1243,7 +1240,6 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         copy,
         paste,
         append_image,
-        base,
         tools,
         args: RefCell::new(args),
         stack,
@@ -1421,6 +1417,10 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         .connect_clicked(move |_| e.selection_to_layer());
     let e = editor.clone();
     editor.copy_selection.connect_clicked(move |_| e.copy());
+    let e = editor.clone();
+    editor
+        .delete_selection
+        .connect_clicked(move |_| e.delete_selection());
     let e = editor.clone();
     editor
         .paste_layer_button
@@ -2638,11 +2638,11 @@ impl Editor {
             .set_sensitive(ready && s.pixel_selection.is_some());
         self.copy_selection
             .set_sensitive(ready && s.pixel_selection.is_some());
+        self.delete_selection
+            .set_sensitive(ready && s.pixel_selection.is_some());
         let can_append = ready;
         self.append_image.set_sensitive(can_append);
         self.recent.set_can_append(can_append);
-        self.base
-            .set_visible(s.document.as_ref().is_some_and(|d| !d.is_composition()));
         self.paste
             .set_sensitive(!s.capturing && !s.selecting_region);
         self.project.set_sensitive(ready);
@@ -2851,9 +2851,10 @@ impl Editor {
         } else {
             crate::i18n::tr("Höhe in Bildpixeln")
         }));
-        self.width.set_visible(!text_only && drawing_style);
-        self.width_controls.set_visible(!text_only && drawing_style);
-        self.width_picker.set_visible(!text_only && drawing_style);
+        let stroke_style = !text_only && drawing_style && s.tool != Tool::Fill;
+        self.width.set_visible(stroke_style);
+        self.width_controls.set_visible(stroke_style);
+        self.width_picker.set_visible(stroke_style);
         self.style_label.set_text(if text_only {
             crate::i18n::tr("Textstil")
         } else {
@@ -2862,10 +2863,10 @@ impl Editor {
         self.font_size.set_value(s.font_size);
         self.inline_box
             .set_visible(self.inline_edit.borrow().is_some());
-        s.dirty = s.document.as_ref().is_some_and(|d| {
-            (d.content_id() > 0 || !d.annotations().is_empty() || d.selection().is_some())
-                && s.project_state != Some(d.content_id())
-        });
+        s.dirty = s
+            .document
+            .as_ref()
+            .is_some_and(|d| d.has_edits() && s.project_state != Some(d.content_id()));
         self.window.set_title(if s.selecting_region {
             crate::i18n::tr("UntuShot · Bereich auswählen")
         } else if s.dirty && s.export_state == s.document.as_ref().map(Document::content_id) {
@@ -3463,6 +3464,30 @@ impl Editor {
         self.refresh();
         self.property_refresh.set(None);
     }
+    fn delete_selection(&self) {
+        if self.state.borrow().tool != Tool::Marquee {
+            self.delete_layer();
+            return;
+        }
+        self.commit_pending_edits();
+        let mut s = self.state.borrow_mut();
+        if s.capturing || s.selecting_region || s.crop_drag.is_some() {
+            return;
+        }
+        let Some(region) = s.pixel_selection else {
+            return;
+        };
+        if s.document
+            .as_mut()
+            .is_some_and(|doc| doc.delete_region(region))
+        {
+            s.dirty = true;
+        }
+        drop(s);
+        self.refresh();
+        self.area.grab_focus();
+    }
+
     fn delete_layer(&self) {
         self.finish_text(true);
         let mut s = self.state.borrow_mut();
@@ -4973,8 +4998,9 @@ impl Editor {
                 }
                 key::v | key::V => self.tools[0].set_active(true),
                 key::m | key::M => self.tools[10].set_active(true),
+                key::f | key::F => self.tools[11].set_active(true),
                 key::s | key::S => self.snapping.set_active(!self.snapping.is_active()),
-                key::Delete | key::BackSpace => self.delete_layer(),
+                key::Delete | key::BackSpace => self.delete_selection(),
                 key::_1
                 | key::_2
                 | key::_3
@@ -5051,6 +5077,19 @@ impl Editor {
             s.selected_many.clear();
             drop(s);
             self.area.queue_draw();
+            return;
+        }
+        if s.tool == Tool::Fill {
+            let color = s.color;
+            let result = s.document.as_mut().unwrap().fill_region(point, color);
+            if matches!(result, Ok(true)) {
+                s.dirty = true;
+            }
+            drop(s);
+            self.refresh();
+            if let Err(err) = result {
+                self.error(err);
+            }
             return;
         }
         if s.tool == Tool::Move {
@@ -5890,7 +5929,7 @@ mod tests {
         editor.window.resize(1100, 850);
         settle();
         editor.layer_scroll.vadjustment().set_value(0.);
-        editor.select_new_image(0, "Unterste Ebene auswählen");
+        editor.select_new_image(1, "Unterste Ebene auswählen");
         settle();
         let row = editor.layers.row_at_index(29).unwrap();
         let adjustment = editor.layer_scroll.vadjustment();
@@ -5951,7 +5990,7 @@ mod tests {
             edit_times.push(start.elapsed().as_secs_f64() * 1000.);
             expected_history.push(annotations());
             if (i + 1) % 13 == 0 {
-                editor.select_new_image(1, "Text in längerer Sitzung bearbeiten");
+                editor.select_new_image(2, "Text in längerer Sitzung bearbeiten");
                 let before = annotations();
                 editor.text(Point::default());
                 let buffer = editor.inline_input.buffer().unwrap();
@@ -5969,7 +6008,7 @@ mod tests {
                         .unwrap()
                         .annotation
                         .text,
-                    before[1].text
+                    before[2].text
                 );
                 editor.redo.emit_clicked();
                 assert_eq!(
@@ -5980,7 +6019,7 @@ mod tests {
                         .unwrap()
                         .annotation
                         .text,
-                    format!("{}{suffix}", before[1].text)
+                    format!("{}{suffix}", before[2].text)
                 );
                 assert_eq!(
                     annotations(),
@@ -5989,7 +6028,7 @@ mod tests {
                 );
                 editor.finish_text(true);
                 expected_history.push(annotations());
-                editor.select_new_image(0, "Bildebene weiter bearbeiten");
+                editor.select_new_image(1, "Bildebene weiter bearbeiten");
             }
         }
         // Traverse the entire retained history after it has rolled over. Each
@@ -6007,7 +6046,7 @@ mod tests {
             assert_eq!(&annotations(), expected);
         }
         assert!(!editor.redo.is_sensitive());
-        editor.select_new_image(0, "Längere Sitzung geprüft");
+        editor.select_new_image(1, "Längere Sitzung geprüft");
         editor.snapping.set_active(false);
         settle();
         let view = editor.state.borrow().view;
@@ -6017,7 +6056,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .bounds();
         let (x, y) = (
             view.x + (r.x + r.w / 2.) * view.scale,
@@ -6102,7 +6141,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            31
+            32
         );
         editor.history(false);
         assert_eq!(
@@ -6117,14 +6156,17 @@ mod tests {
         );
         assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
         assert!(editor.open_path(&png));
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         assert!(editor.open_path(&project));
         assert_eq!(
             editor
@@ -6148,7 +6190,7 @@ mod tests {
                 .read_pixel_bytes(),
             expected_pixels
         );
-        editor.select_new_image(0, "30 Ebenen · Projekt wieder geöffnet");
+        editor.select_new_image(1, "30 Ebenen · Projekt wieder geöffnet");
         settle();
         let image = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
@@ -6219,7 +6261,7 @@ mod tests {
             Mode::Full,
             None,
         );
-        history_editor.select_new_image(0, "Eigenschaften der Bildebene");
+        history_editor.select_new_image(1, "Eigenschaften der Bildebene");
         let parent = history_editor.history_canvas.clone();
         let panel_height = Cell::new(None);
         crate::history::test_many_images(&parent, |_| {
@@ -6274,6 +6316,7 @@ mod tests {
         object_resize_handles(&app);
         layer_list_controls(&app);
         selection_and_layer_effects(&app);
+        delete_and_fill_selection(&app);
         live_properties(&app);
         snapping_and_context_menu(&app);
         image_layers(&app);
@@ -6409,6 +6452,11 @@ mod tests {
                 true,
             )
             .unwrap();
+        // Scroll to the style controls before opening their popover in a short window.
+        settle();
+        let sidebar_scroll = editor.left_panel.vadjustment();
+        sidebar_scroll.set_value(sidebar_scroll.upper() - sidebar_scroll.page_size());
+        settle();
         font_picker.set_active(true);
         settle();
         assert!(font_popover.is_mapped());
@@ -6551,7 +6599,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .color;
         assert!((chosen.1 - 0.7).abs() < 0.01);
         editor.history(false);
@@ -6671,7 +6719,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            1
+            2
         );
         settle();
         assert!(!editor.empty_layers.is_visible());
@@ -6692,7 +6740,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .bounds();
         assert!(
             (bounds.x - 400.).abs() < 1e-8
@@ -6706,7 +6754,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .bounds();
         assert!((bounds.x - 300.).abs() < 1e-8 && (bounds.y - 280.).abs() < 1e-8);
         editor.redo.emit_clicked();
@@ -6737,7 +6785,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .width,
             12.
         );
@@ -6749,7 +6797,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .width,
             8.
         );
@@ -6773,7 +6821,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .width,
             8.
         );
@@ -6785,7 +6833,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .visible
         );
         editor.visible.set_active(true);
@@ -6802,7 +6850,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[1]
+                .annotations()[2]
                 .name(),
             "Hinweis"
         );
@@ -6820,7 +6868,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .bounds()
                 .x
                 - 410.)
@@ -6843,7 +6891,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            4
+            5
         );
         editor.undo.emit_clicked();
         assert_eq!(
@@ -6855,7 +6903,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            2
+            3
         );
         editor
             .layers
@@ -7104,8 +7152,8 @@ mod tests {
         assert!(editor.session.borrow().is_none());
         let (_session, restored) = recovery::Session::open(recovery_dir.path(), true).unwrap();
         let restored = restored.unwrap();
-        assert_eq!(restored.annotations().len(), 2);
-        assert_eq!(restored.annotations()[1].name(), "Hinweis");
+        assert_eq!(restored.annotations().len(), 3);
+        assert_eq!(restored.annotations()[2].name(), "Hinweis");
         assert_eq!(restored.selection(), Some(moved));
         let modes = build(&app, Args::parse_from(["untushot", "--demo"]));
         modes.accept_capture(document::demo().unwrap(), "Testaufnahme", Mode::Full, None);
@@ -7141,14 +7189,17 @@ mod tests {
         editor.press(v.x + 200. * v.scale, v.y + 200. * v.scale, false);
         editor.motion(v.x + 500. * v.scale, v.y + 400. * v.scale);
         editor.key_input(key::Escape, none);
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         editor.press(v.x + 200. * v.scale, v.y + 200. * v.scale, false);
         editor.motion(v.x + 500. * v.scale, v.y + 400. * v.scale);
         editor.key_input(key::Return, none);
@@ -7161,7 +7212,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            1
+            2
         );
         editor.set_document(document::demo().unwrap(), "Text-Test");
         settle();
@@ -7172,14 +7223,17 @@ mod tests {
         assert!(editor.inline_box.is_visible());
         editor.inline_input.buffer().unwrap().set_text("Verwerfen");
         editor.key_input(key::Escape, none);
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         editor.press(x, y, false);
         editor
             .inline_input
@@ -7219,7 +7273,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text_size(),
             40.
         );
@@ -7238,7 +7292,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text,
             "Direkt im Bild\nZweite Zeile"
         );
@@ -7257,7 +7311,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text,
             "Direkt im Bild\nZweite Zeile"
         );
@@ -7277,7 +7331,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text_size(),
             56.
         );
@@ -7298,7 +7352,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            2
+            3
         );
         editor.history(false);
         editor.history(false);
@@ -7309,7 +7363,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text,
             "Überarbeitet"
         );
@@ -7459,7 +7513,7 @@ mod tests {
         settle();
         assert!(editor.closed.get());
         let (_session, recovered) = recovery::Session::open(session_dir.path(), true).unwrap();
-        assert_eq!(recovered.unwrap().annotations()[0].text, "Überarbeitet");
+        assert_eq!(recovered.unwrap().annotations()[1].text, "Überarbeitet");
         // Opting into background operation saves and hides; delayed actions are
         // cancellable without allowing a real desktop capture in this test.
         let resident = build(&app, Args::parse_from(["untushot", "--demo"]));
@@ -7691,7 +7745,17 @@ mod tests {
         settle();
         assert_eq!(editor.state.borrow().selected, Some(1));
         assert_eq!(editor.layers.children().len(), 2);
-        assert!(!editor.base.is_visible());
+        assert_eq!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .tool,
+            Tool::Image(0)
+        );
         assert!(!editor.width_controls.is_visible());
         assert!(!editor.color_controls.is_visible());
         assert!(!editor.monitor_guides.is_visible());
@@ -7732,7 +7796,8 @@ mod tests {
             .as_ref()
             .unwrap()
             .is_composition());
-        assert!(!editor.right_panel.is_visible());
+        assert!(editor.right_panel.is_visible());
+        assert_eq!(editor.layers.children().len(), 1);
         editor.history(true);
         settle();
         assert_eq!(editor.layers.children().len(), 2);
@@ -8183,14 +8248,14 @@ mod tests {
         doc.copy_region_to_layer(original).unwrap();
         doc.copy_region_to_layer(Rect::new(400., 300., 160., 100.))
             .unwrap();
-        let mut hidden = doc.annotations()[1].translated(-2., -2.);
+        let mut hidden = doc.annotations()[2].translated(-2., -2.);
         hidden.visible = false;
         doc.add(hidden);
-        let outside = doc.annotations()[1].translated(1000., -2.);
+        let outside = doc.annotations()[2].translated(1000., -2.);
         doc.add(outside);
         let layer_count = doc.annotations().len();
         editor.set_document(doc, "Einrasten und Objektaktionen");
-        editor.select_new_image(0, "Einrasten und Objektaktionen");
+        editor.select_new_image(1, "Einrasten und Objektaktionen");
         editor.window.resize(1000, 700);
         settle();
         let view = editor.state.borrow().view;
@@ -8217,7 +8282,7 @@ mod tests {
             assert_eq!(drag.guides.len(), 2);
             // Hidden layer at 398/298 must not attract the moving image.
             assert_eq!(
-                s.document.as_ref().unwrap().annotations()[0].bounds(),
+                s.document.as_ref().unwrap().annotations()[1].bounds(),
                 original
             );
         }
@@ -8277,7 +8342,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .bounds(),
             Rect::new(400., 300., 120., 80.)
         );
@@ -8289,14 +8354,14 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .bounds(),
             original
         );
         {
             let mut s = editor.state.borrow_mut();
-            s.selected = Some(0);
-            s.selected_many = vec![0, 1];
+            s.selected = Some(1);
+            s.selected_many = vec![1, 2];
         }
         editor.press(x, y, false);
         let (gx, gy) = at(63., 43.);
@@ -8320,7 +8385,7 @@ mod tests {
                 .unwrap()
         };
         let menu = editor.menu_at_object(mx, my).unwrap();
-        assert_eq!(editor.state.borrow().selected, Some(1));
+        assert_eq!(editor.state.borrow().selected, Some(2));
         item(&menu, 0).activate();
         assert_eq!(
             editor
@@ -8349,7 +8414,7 @@ mod tests {
         editor.history(false);
         let menu = editor.menu_at_object(mx, my).unwrap();
         item(&menu, 2).activate();
-        assert_eq!(editor.state.borrow().selected, Some(0));
+        assert_eq!(editor.state.borrow().selected, Some(1));
         editor.history(false);
         let menu = editor.menu_at_object(mx, my).unwrap();
         item(&menu, 3).activate();
@@ -8367,11 +8432,11 @@ mod tests {
         editor.history(false);
         {
             let mut s = editor.state.borrow_mut();
-            s.selected = Some(0);
-            s.selected_many = vec![0, 1];
+            s.selected = Some(1);
+            s.selected_many = vec![1, 2];
         }
         let menu = editor.menu_at_object(mx, my).unwrap();
-        assert_eq!(editor.state.borrow().indices(), vec![0, 1]);
+        assert_eq!(editor.state.borrow().indices(), vec![1, 2]);
         assert!(!item(&menu, 1).is_sensitive() && !item(&menu, 2).is_sensitive());
         item(&menu, 0).activate();
         assert_eq!(
@@ -8390,14 +8455,17 @@ mod tests {
         let menu = editor.menu_at_object(mx, my).unwrap();
         editor.set_document(document::demo().unwrap(), "Neues Dokument");
         item(&menu, 3).activate();
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         editor.mark_project_saved();
         editor.window.close();
     }
@@ -8420,7 +8488,7 @@ mod tests {
             .unwrap();
         editor.set_document(doc, "Eigenschaften direkt bearbeiten");
         editor.select_new_image(
-            0,
+            1,
             "Direkte Vorschau · Strg+Z macht eine Feldänderung rückgängig",
         );
         editor.border_enabled.set_active(true);
@@ -8447,7 +8515,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .clone();
         editor.mark_project_saved();
         editor.shadow_blur.grab_focus();
@@ -8480,7 +8548,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .effects
                 .shadow_blur,
             24.
@@ -8494,7 +8562,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .effects
                 .shadow_blur,
             24.
@@ -8508,7 +8576,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0],
+                .annotations()[1],
             original
         );
         assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
@@ -8520,12 +8588,12 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .effects
                 .shadow_blur,
             25.
         );
-        editor.select_new_image(0, "Direkte Vorschau");
+        editor.select_new_image(1, "Direkte Vorschau");
         editor.shadow_offset.grab_focus();
         editor.shadow_offset.set_text("10");
         editor.shadow_offset.set_text("16");
@@ -8538,7 +8606,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .effects
                 .shadow_blur,
             25.
@@ -8550,12 +8618,12 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .effects
                 .shadow_offset,
             original.effects.shadow_offset
         );
-        editor.select_new_image(0, "Direkte Vorschau");
+        editor.select_new_image(1, "Direkte Vorschau");
         let geometry = editor.object_properties.children()[0]
             .clone()
             .downcast::<gtk::Expander>()
@@ -8571,7 +8639,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .bounds();
         assert!((bounds.w - 600.).abs() < 0.01);
         assert!((bounds.w / bounds.h - 450. / 190.).abs() < 0.001);
@@ -8590,15 +8658,15 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .bounds(),
             bounds
         );
         assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
         let loaded = Document::read_project(std::fs::File::open(&path).unwrap()).unwrap();
-        assert_eq!(loaded.annotations()[0].bounds(), bounds);
-        assert_eq!(loaded.annotations()[0].effects.shadow_blur, 25.);
-        editor.select_new_image(0, "Größe, Rand und Schatten direkt im Bild einstellen");
+        assert_eq!(loaded.annotations()[1].bounds(), bounds);
+        assert_eq!(loaded.annotations()[1].effects.shadow_blur, 25.);
+        editor.select_new_image(1, "Größe, Rand und Schatten direkt im Bild einstellen");
         geometry.set_expanded(false);
         editor.nudge(200., 180., false);
         editor.layer_scroll.vadjustment().set_value(0.);
@@ -8627,7 +8695,7 @@ mod tests {
             let mut s = editor.state.borrow_mut();
             let doc = s.document.as_mut().unwrap();
             for _ in 0..10 {
-                doc.duplicate_many(&[0]);
+                doc.duplicate_many(&[1]);
             }
         }
         editor.refresh();
@@ -8676,6 +8744,176 @@ mod tests {
         surface
             .write_to_png(&mut std::fs::File::create("target/gtk-flexible-layers.png").unwrap())
             .unwrap();
+        editor.mark_project_saved();
+        editor.window.close();
+    }
+
+    #[test]
+    #[ignore = "requires a private GTK display"]
+    fn gtk_background_layer() {
+        use gdk::keys::constants as key;
+        gtk::init().expect("GTK needs a display");
+        let app = gtk::Application::new(
+            Some("io.github.untushot.BackgroundLayerTest"),
+            gio::ApplicationFlags::NON_UNIQUE,
+        );
+        app.register(gio::Cancellable::NONE).unwrap();
+        let editor = build(&app, Args::parse_from(["untushot", "--demo"]));
+        let image = gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, 120, 80).unwrap();
+        image.fill(0xff0000ff);
+        editor.set_document(Document::new(image, vec![]).unwrap(), "background");
+        let until = std::time::Instant::now() + Duration::from_millis(250);
+        while std::time::Instant::now() < until {
+            glib::MainContext::default().iteration(false);
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!editor.state.borrow().dirty);
+        assert!(!editor.undo.is_sensitive());
+        assert_eq!(editor.layers.children().len(), 1);
+        assert!(editor.right_panel.is_visible());
+        assert_eq!(
+            editor.layer_rows.borrow()[0].label.text(),
+            crate::i18n::tr("Hintergrund")
+        );
+        let view = editor.state.borrow().view;
+        editor.press(view.x + 60. * view.scale, view.y + 40. * view.scale, false);
+        editor.release(view.x + 60. * view.scale, view.y + 40. * view.scale);
+        assert_eq!(editor.state.borrow().selected, Some(0));
+        assert!(editor.delete.is_sensitive());
+        assert!(editor.image_effects.is_visible());
+        let alpha = |x: usize, y: usize| {
+            let image = editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .export()
+                .unwrap();
+            image.read_pixel_bytes().as_ref()[y * image.rowstride() as usize + x * 4 + 3]
+        };
+        let eye = editor.layer_rows.borrow()[0].visibility.clone();
+        eye.emit_clicked();
+        assert_eq!(alpha(30, 30), 0);
+        eye.emit_clicked();
+        assert_eq!(alpha(30, 30), 255);
+        editor.nudge(10., 0., false);
+        assert_eq!(alpha(0, 0), 0);
+        assert_eq!(alpha(30, 30), 255);
+        editor.properties[2].set_value(60.);
+        assert_eq!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .bounds(),
+            Rect::new(10., 0., 60., 40.)
+        );
+        editor.begin_layer_rename();
+        editor.layer_name.set_text("My background");
+        editor.finish_layer_rename(true);
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("background.untushot");
+        assert!(editor.save_project_to(&path));
+        assert!(editor.open_path(&path));
+        assert_eq!(editor.layers.children().len(), 1);
+        assert_eq!(editor.layer_rows.borrow()[0].label.text(), "My background");
+        editor
+            .layers
+            .select_row(editor.layers.row_at_index(0).as_ref());
+        editor.area.grab_focus();
+        editor.key_input(key::Delete, gdk::ModifierType::empty());
+        assert!(editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .annotations()
+            .is_empty());
+        assert_eq!(alpha(30, 30), 0);
+        assert!(editor.save_project_to(&path));
+        editor.history(false);
+        assert_eq!(alpha(30, 30), 255);
+        editor.history(true);
+        assert_eq!(alpha(30, 30), 0);
+        assert!(editor.open_path(&path));
+        assert!(editor.layers.children().is_empty());
+        assert_eq!(alpha(30, 30), 0);
+        editor.mark_project_saved();
+        editor.window.close();
+    }
+
+    #[test]
+    #[ignore = "requires a private GTK display"]
+    fn gtk_pixel_edits() {
+        gtk::init().expect("GTK needs a display");
+        let app = gtk::Application::new(
+            Some("io.github.untushot.PixelEditsTest"),
+            gio::ApplicationFlags::NON_UNIQUE,
+        );
+        app.register(gio::Cancellable::NONE).unwrap();
+        delete_and_fill_selection(&app);
+    }
+
+    fn delete_and_fill_selection(app: &gtk::Application) {
+        use gdk::keys::constants as key;
+        let none = gdk::ModifierType::empty();
+        let ctrl = gdk::ModifierType::CONTROL_MASK;
+        let editor = build(app, Args::parse_from(["untushot", "--demo"]));
+        let image =
+            gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, 100, 100).unwrap();
+        image.fill(0xffffffff);
+        editor.set_document(Document::new(image, vec![]).unwrap(), "test");
+        let until = std::time::Instant::now() + Duration::from_millis(250);
+        while std::time::Instant::now() < until {
+            while glib::MainContext::default().pending() {
+                glib::MainContext::default().iteration(false);
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        editor.area.grab_focus();
+        editor.key_input(key::m, none);
+        assert!(!editor.delete_selection.is_sensitive());
+        let view = editor.state.borrow().view;
+        let point = |x, y| (view.x + x * view.scale, view.y + y * view.scale);
+        let (x, y) = point(20., 20.);
+        let (ex, ey) = point(40., 40.);
+        editor.press(x, y, false);
+        editor.release(ex, ey);
+        assert!(editor.delete_selection.is_sensitive());
+        let pixel = |x: usize, y: usize| {
+            let s = editor.state.borrow();
+            let image = s.document.as_ref().unwrap().export().unwrap();
+            let offset = y * image.rowstride() as usize + x * 4;
+            image.read_pixel_bytes().as_ref()[offset..offset + 4].to_vec()
+        };
+        for delete_key in [key::Delete, key::BackSpace] {
+            editor.key_input(delete_key, none);
+            assert_eq!(pixel(30, 30), [0, 0, 0, 0]);
+            editor.key_input(key::z, ctrl);
+            assert_eq!(pixel(30, 30), [255, 255, 255, 255]);
+        }
+        editor.delete_selection.emit_clicked();
+        assert_eq!(pixel(30, 30), [0, 0, 0, 0]);
+        editor.key_input(key::f, none);
+        assert_eq!(editor.state.borrow().tool, Tool::Fill);
+        assert!(!editor.width_controls.is_visible());
+        assert!(editor.color_controls.is_visible());
+        editor.state.borrow_mut().color = (0., 0., 1.);
+        let (x, y) = point(30., 30.);
+        editor.press(x, y, false);
+        editor.release(x, y);
+        assert_eq!(pixel(30, 30), [0, 0, 255, 255]);
+        assert_eq!(pixel(19, 30), [255, 255, 255, 255]);
+        assert!(editor.state.borrow().draft.is_none());
+        editor.key_input(key::z, ctrl);
+        assert_eq!(pixel(30, 30), [0, 0, 0, 0]);
+        editor.key_input(key::y, ctrl);
+        assert_eq!(pixel(30, 30), [0, 0, 255, 255]);
         editor.mark_project_saved();
         editor.window.close();
     }
@@ -8774,7 +9012,7 @@ mod tests {
         editor.key_input(key::j, ctrl);
         settle();
         assert_eq!(editor.state.borrow().tool, Tool::Move);
-        assert_eq!(editor.state.borrow().selected, Some(0));
+        assert_eq!(editor.state.borrow().selected, Some(1));
         assert!(editor.image_effects.is_mapped());
         assert_eq!(
             editor
@@ -8783,7 +9021,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .bounds(),
             region
         );
@@ -8799,7 +9037,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .bounds();
         assert!(enlarged.w > region.w && enlarged.h > region.h);
         editor.nudge(280., 160., false);
@@ -8816,7 +9054,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .clone();
         assert!(styled.effects.border && styled.effects.shadow);
         assert_eq!(styled.effects.border_width, 4.);
@@ -8849,7 +9087,7 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            2
+            3
         );
         assert_eq!(
             editor
@@ -8858,7 +9096,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[1]
+                .annotations()[2]
                 .bounds(),
             region
         );
@@ -8876,16 +9114,16 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            1
+            2
         );
         editor.history(true);
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("details.untushot");
         assert!(editor.save_project_to(&path));
         let loaded = Document::read_project(std::fs::File::open(&path).unwrap()).unwrap();
-        assert_eq!(loaded.annotations()[0], styled);
+        assert_eq!(loaded.annotations()[1], styled);
         assert_eq!(loaded.selection(), Some(crop));
-        assert_eq!(loaded.annotations().len(), 2);
+        assert_eq!(loaded.annotations().len(), 3);
         let clipboard = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
         clipboard.set_text("Kein Bild");
         editor.area.grab_focus();
@@ -8902,21 +9140,24 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .len(),
-            2
+            3
         );
         // A late decoder result must never paste into a subsequently opened document.
         clipboard.set_image(&loaded.export().unwrap());
         editor.key_input(key::v, ctrl);
         editor.set_document(document::demo().unwrap(), "Neues Dokument");
         settle();
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         editor.mark_project_saved();
         editor.window.close();
     }
@@ -8999,7 +9240,7 @@ mod tests {
                         .document
                         .as_ref()
                         .unwrap()
-                        .annotations()[0],
+                        .annotations()[1],
                     original,
                     "preview must not modify the document"
                 );
@@ -9024,7 +9265,7 @@ mod tests {
                     .document
                     .as_ref()
                     .unwrap()
-                    .annotations()[0]
+                    .annotations()[1]
                     .clone();
                 assert_ne!(changed, original);
                 editor.history(false);
@@ -9035,7 +9276,7 @@ mod tests {
                         .document
                         .as_ref()
                         .unwrap()
-                        .annotations()[0],
+                        .annotations()[1],
                     original,
                     "one undo restores the complete drag"
                 );
@@ -9047,7 +9288,7 @@ mod tests {
                         .document
                         .as_ref()
                         .unwrap()
-                        .annotations()[0],
+                        .annotations()[1],
                     changed
                 );
                 editor.history(false);
@@ -9109,7 +9350,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .clone();
         second.text = "Zweite Ebene".into();
         second.points = vec![Point::new(900., 500.)];
@@ -9131,13 +9372,14 @@ mod tests {
                 .unwrap()
                 .annotations()
                 .iter()
+                .skip(1)
                 .map(Annotation::text_size)
                 .collect::<Vec<_>>()
         };
-        editor.select_new_image(0, "Erste Ebene");
+        editor.select_new_image(1, "Erste Ebene");
         editor.font_size.grab_focus();
         editor.font_size.set_text("57");
-        editor.select_new_image(1, "Zweite Ebene");
+        editor.select_new_image(2, "Zweite Ebene");
         settle();
         assert_eq!(
             sizes(),
@@ -9154,7 +9396,7 @@ mod tests {
         editor.layers.select_row(Some(&row));
         settle();
         assert_eq!(sizes(), vec![57., 63.]);
-        assert_eq!(editor.state.borrow().indices(), vec![0]);
+        assert_eq!(editor.state.borrow().indices(), vec![1]);
         editor.font_size.grab_focus();
         editor.font_size.set_text("67");
         editor.tools[4].set_active(true);
@@ -9165,7 +9407,7 @@ mod tests {
             "tool switches commit input before clearing the selection"
         );
 
-        editor.select_new_image(0, "Erste Ebene");
+        editor.select_new_image(1, "Erste Ebene");
         editor.font_size.grab_focus();
         editor.font_size.set_text("71");
         editor.duplicate.emit_clicked();
@@ -9180,7 +9422,7 @@ mod tests {
         editor.undo.emit_clicked();
         assert_eq!(sizes(), vec![67., 63.]);
 
-        editor.select_new_image(0, "Erste Ebene");
+        editor.select_new_image(1, "Erste Ebene");
         editor.font_size.grab_focus();
         editor.font_size.set_text("73");
         editor.undo.emit_clicked();
@@ -9192,7 +9434,7 @@ mod tests {
         );
         editor.redo.emit_clicked();
         assert_eq!(sizes(), vec![73., 63.]);
-        editor.select_new_image(0, "Erste Ebene");
+        editor.select_new_image(1, "Erste Ebene");
         editor.font_size.grab_focus();
         editor.font_size.set_text("75");
         shortcut(editor.window.upcast_ref(), key::z, ctrl);
@@ -9200,7 +9442,7 @@ mod tests {
         shortcut(editor.window.upcast_ref(), key::y, ctrl);
         assert_eq!(sizes(), vec![75., 63.]);
 
-        editor.select_new_image(0, "Erste Ebene");
+        editor.select_new_image(1, "Erste Ebene");
         editor.font_size.grab_focus();
         editor.font_size.set_text("79");
         let view = editor.state.borrow().view;
@@ -9222,7 +9464,7 @@ mod tests {
             .document
             .as_ref()
             .unwrap()
-            .annotations()[0]
+            .annotations()[1]
             .clone();
         rectangle.tool = Tool::Rectangle;
         rectangle.points = vec![Point::new(400., 200.), Point::new(600., 400.)];
@@ -9235,7 +9477,7 @@ mod tests {
             .as_mut()
             .unwrap()
             .add(rectangle);
-        editor.select_new_image(2, "Rechteck auswählen");
+        editor.select_new_image(3, "Rechteck auswählen");
         editor.width_picker.set_active(true);
         settle();
         editor.width.grab_focus();
@@ -9249,7 +9491,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[2]
+                .annotations()[3]
                 .width,
             4.
         );
@@ -9262,7 +9504,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[2]
+                .annotations()[3]
                 .width,
             19.
         );
@@ -9291,7 +9533,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()
+                .annotations()[1..]
                 .to_vec()
         };
         let revision = || {
@@ -9327,7 +9569,7 @@ mod tests {
         editor.redo.emit_clicked();
         assert_eq!(layers()[0].name(), "Neuer Ebenenname");
 
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.font_size.grab_focus();
         editor.font_size.set_text("51");
         editor.begin_layer_rename();
@@ -9351,7 +9593,7 @@ mod tests {
         assert!(editor.save_project_to(&project));
         assert!(editor.open_path(&project));
         assert!(!editor.undo.is_sensitive());
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.begin_layer_rename();
         assert!(
             editor.undo.is_sensitive(),
@@ -9371,7 +9613,7 @@ mod tests {
         assert_eq!(layers()[0].name(), "Per Tastatur umbenannt");
         assert_eq!(editor.storage_caption.text(), "Projekt: geändert");
 
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.begin_layer_rename();
         let unchanged = layers();
         let unchanged_revision = revision();
@@ -9384,7 +9626,7 @@ mod tests {
         assert_eq!(revision(), unchanged_revision);
 
         editor.history(false);
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.begin_layer_rename();
         editor.layer_name.set_text("Noch nicht übernehmen");
         assert!(!editor.redo.is_sensitive());
@@ -9401,7 +9643,7 @@ mod tests {
         editor.redo.emit_clicked();
         assert_eq!(layers()[0].name(), "Per Tastatur umbenannt");
 
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.text(Point::default());
         editor
             .inline_input
@@ -9424,7 +9666,7 @@ mod tests {
         editor.redo.emit_clicked();
         assert_eq!(layers()[0].name(), "Name nach Textbearbeitung");
         assert_eq!(layers()[0].text, "Text vor dem Umbenennen übernehmen");
-        editor.select_new_image(0, "Ebene auswählen");
+        editor.select_new_image(1, "Ebene auswählen");
         editor.begin_layer_rename();
         editor.layer_name.set_text("Veralteter Entwurf");
         let mut edited = layers()[0].clone();
@@ -9463,7 +9705,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .clone()
         };
         let content_id = || {
@@ -9603,13 +9845,14 @@ mod tests {
                 .as_ref()
                 .unwrap()
                 .annotations()
-                .is_empty(),
+                .len()
+                == 1,
             "the completed session is one document undo step"
         );
         editor.history(true);
         assert_eq!(text_layer(), original);
 
-        editor.select_new_image(0, "Text auswählen");
+        editor.select_new_image(1, "Text auswählen");
         editor.text(Point::default());
         assert!(
             !editor.undo.is_sensitive(),
@@ -9665,7 +9908,7 @@ mod tests {
         editor.history(true);
         assert_eq!(text_layer(), revised);
 
-        editor.select_new_image(0, "Text auswählen");
+        editor.select_new_image(1, "Text auswählen");
         editor.text(Point::default());
         replace("Nicht übernehmen");
         editor.font_size.grab_focus();
@@ -9687,7 +9930,7 @@ mod tests {
         assert_eq!(content_id(), before_cancel);
 
         editor.history(false);
-        editor.select_new_image(0, "Text auswählen");
+        editor.select_new_image(1, "Text auswählen");
         editor.text(Point::default());
         let before_redo = content_id();
         assert!(
@@ -9704,7 +9947,7 @@ mod tests {
             "cancel preserves the document redo branch"
         );
         editor.redo.emit_clicked();
-        editor.select_new_image(0, "Text auswählen");
+        editor.select_new_image(1, "Text auswählen");
         let valid = text_layer();
         let valid_id = content_id();
         editor.text(Point::default());
@@ -9745,7 +9988,7 @@ mod tests {
             .as_mut()
             .unwrap()
             .add(shape);
-        editor.select_new_image(1, "Rechteck auswählen");
+        editor.select_new_image(2, "Rechteck auswählen");
         let stroke = || {
             editor
                 .state
@@ -9753,7 +9996,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[1]
+                .annotations()[2]
                 .width
         };
         for invalid in ["kein Wert", "999", "-5"] {
@@ -9840,7 +10083,7 @@ mod tests {
                 .document
                 .as_ref()
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text,
             "Save while typing"
         );
@@ -9891,7 +10134,7 @@ mod tests {
             assert!(editor.layer_rename.get().is_none());
             assert_eq!(editor.export_path.borrow().as_ref(), Some(&output));
             let s = editor.state.borrow();
-            let layers = s.document.as_ref().unwrap().annotations();
+            let layers = &s.document.as_ref().unwrap().annotations()[1..];
             assert_eq!(layers.len(), 1);
             assert_eq!(layers[0].text_size(), 49.);
             if field >= 1 {
@@ -10115,14 +10358,17 @@ mod tests {
             shortcut(d.upcast_ref(), key::s, gdk::ModifierType::CONTROL_MASK);
         });
         assert!(editor.open_path(&next));
-        assert!(editor
-            .state
-            .borrow()
-            .document
-            .as_ref()
-            .unwrap()
-            .annotations()
-            .is_empty());
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()
+                .len()
+                == 1
+        );
         assert!(editor.export_path.borrow().is_none());
         assert!(crate::pixels::open(&output).is_ok());
         // Project updates reuse only an explicitly saved/opened project target;
@@ -10139,7 +10385,7 @@ mod tests {
         let project_path = temp.path().join("Editable project.untushot");
         assert!(editor.save_project_to(&project_path));
         assert_eq!(
-            open_document(&project_path).unwrap().0.annotations()[0].text_size(),
+            open_document(&project_path).unwrap().0.annotations()[1].text_size(),
             63.
         );
         assert!(editor.inline_edit.borrow().is_none());
@@ -10154,7 +10400,7 @@ mod tests {
         editor.layer_name.set_text("Gespeicherter Ebenenname");
         assert!(editor.save_project());
         assert_eq!(
-            open_document(&project_path).unwrap().0.annotations()[0].name(),
+            open_document(&project_path).unwrap().0.annotations()[1].name(),
             "Gespeicherter Ebenenname"
         );
         assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
@@ -10171,7 +10417,7 @@ mod tests {
             ctrl | gdk::ModifierType::MOD1_MASK,
         );
         assert_eq!(
-            open_document(&project_path).unwrap().0.annotations()[0].text,
+            open_document(&project_path).unwrap().0.annotations()[1].text,
             "Second project annotation"
         );
         assert!(!editor.state.borrow().dirty);
@@ -10277,7 +10523,7 @@ mod tests {
         assert_eq!(editor.storage_caption.text(), "Projekt: gespeichert");
         assert_eq!(
             open_document(&project_path).unwrap().0.annotations().len(),
-            2
+            3
         );
         // With background operation enabled, W keeps the session; Q closes it
         // even from setup with a spin button focused.

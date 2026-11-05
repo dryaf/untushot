@@ -139,7 +139,8 @@ impl Preview {
             * i64::from(key.device_scale).pow(2)
             * 4;
         // Keep the extra cache bounded even for scattered groups on HiDPI screens.
-        if bytes * (indices.len() as i64 + 1) > 64 * 1024 * 1024 {
+        // Erasures must composite with every preceding layer, including edited ones.
+        if doc.has_erasure() || bytes * (indices.len() as i64 + 1) > 64 * 1024 * 1024 {
             self.dynamic = None;
             cr.save()?;
             transform(cr, key, doc.bounds());
@@ -155,12 +156,11 @@ impl Preview {
             self.dynamic = None;
             let mut parts = Vec::new();
             let mut start = 0;
-            let mut background = true;
             for &end in indices
                 .iter()
                 .chain(std::iter::once(&doc.annotations().len()))
             {
-                if background || end > start {
+                if end > start {
                     let surface = ImageSurface::create(
                         Format::ARgb32,
                         key.width.max(1) * key.device_scale,
@@ -170,9 +170,6 @@ impl Preview {
                         .set_device_scale(f64::from(key.device_scale), f64::from(key.device_scale));
                     let canvas = Context::new(&surface)?;
                     transform(&canvas, key, doc.bounds());
-                    if background {
-                        doc.paint_background(&canvas)?;
-                    }
                     for a in &doc.annotations()[start..end] {
                         doc.paint_layer(&canvas, a)?;
                     }
@@ -182,7 +179,6 @@ impl Preview {
                     parts.push(PreviewPart::Edited(end));
                 }
                 start = end + 1;
-                background = false;
             }
             self.dynamic = Some(DynamicPreview {
                 key,
@@ -225,6 +221,56 @@ fn transform(cr: &Context, key: Key, bounds: Rect) {
 mod tests {
     use super::*;
     #[test]
+    fn erasures_clear_document_pixels_without_clearing_the_ui_during_drag() {
+        let bg = gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, 20, 20).unwrap();
+        bg.fill(0xff0000ff);
+        let mut doc = Document::new(bg.clone(), vec![]).unwrap();
+        doc.insert_image(bg, Rect::new(0., 0., 10., 10.), "image".into())
+            .unwrap();
+        doc.delete_region(Rect::new(3., 3., 4., 4.));
+        let key = Key {
+            revision: doc.revision(),
+            width: 20,
+            height: 20,
+            device_scale: 1,
+            x: 0.,
+            y: 0.,
+            zoom: 1.,
+            viewport: doc.bounds(),
+        };
+        let mut preview = Preview::default();
+        // Exercise both moving a layer below the erasure and moving the erasure.
+        for index in [1, 2] {
+            for dynamic in [false, true] {
+                let surface = ImageSurface::create(Format::ARgb32, 20, 20).unwrap();
+                let cr = Context::new(&surface).unwrap();
+                cr.set_source_rgb(0., 0., 1.);
+                cr.paint().unwrap();
+                if dynamic {
+                    let edits = [(index, doc.annotations()[index].translated(1., 0.))];
+                    preview.paint_dynamic(&cr, &doc, &edits, key).unwrap();
+                } else {
+                    preview.paint(&cr, &doc, key).unwrap();
+                }
+                surface
+                    .with_data(|bytes| {
+                        let pixel = |x: usize, y: usize| {
+                            let offset = y * surface.stride() as usize + x * 4;
+                            u32::from_ne_bytes(bytes[offset..offset + 4].try_into().unwrap())
+                        };
+                        assert_eq!(
+                            pixel(5, 5),
+                            0xff0000ff,
+                            "deleted space must show the UI behind it"
+                        );
+                        assert_eq!(pixel(1, 1), 0xffff0000);
+                    })
+                    .unwrap();
+            }
+        }
+    }
+
+    #[test]
     fn layer_cache_reuses_visibility_and_name_changes_but_updates_content_and_dpi() {
         use crate::{document::Tool, geometry::Point};
         let mut doc = crate::document::demo().unwrap();
@@ -241,29 +287,29 @@ mod tests {
             clip: None,
         });
         let mut cache = LayerPreviews::default();
-        cache.get(&doc, 0, 1).unwrap();
-        let mut a = doc.annotations()[0].clone();
+        cache.get(&doc, 1, 1).unwrap();
+        let mut a = doc.annotations()[1].clone();
         a.visible = false;
         a.label = "Neuer Name".into();
-        doc.replace(0, a.clone());
-        cache.get(&doc, 0, 1).unwrap();
+        doc.replace(1, a.clone());
+        cache.get(&doc, 1, 1).unwrap();
         assert_eq!(cache.builds, 1);
         a = a.translated(200., 80.);
-        doc.replace(0, a.clone());
-        cache.get(&doc, 0, 1).unwrap();
+        doc.replace(1, a.clone());
+        cache.get(&doc, 1, 1).unwrap();
         assert_eq!(cache.builds, 1, "moving a layer must reuse its thumbnail");
         a.color = (0., 0., 1.);
-        doc.replace(0, a);
-        cache.get(&doc, 0, 1).unwrap();
+        doc.replace(1, a);
+        cache.get(&doc, 1, 1).unwrap();
         assert_eq!(cache.builds, 2);
         doc.undo();
-        cache.get(&doc, 0, 1).unwrap();
+        cache.get(&doc, 1, 1).unwrap();
         assert_eq!(cache.builds, 3);
-        assert_eq!(cache.get(&doc, 0, 2).unwrap().width(), 88);
+        assert_eq!(cache.get(&doc, 1, 2).unwrap().width(), 88);
         assert_eq!(cache.builds, 4);
         cache.truncate(0);
         assert!(cache.entries.is_empty());
-        cache.get(&doc, 0, 2).unwrap();
+        cache.get(&doc, 1, 2).unwrap();
         assert_eq!(cache.builds, 5);
     }
     #[test]
@@ -313,7 +359,7 @@ mod tests {
         let mut cache = Preview::default();
         for dpi in [1, 2] {
             for zoom in [0.5, 1.25] {
-                for indices in [vec![0], vec![1, 3], vec![0, 1, 2, 3, 4]] {
+                for indices in [vec![1], vec![2, 4], vec![0, 1, 2, 3, 4, 5]] {
                     // The large virtual viewport exercises the memory-bounded fallback.
                     for width in [320, 100_000] {
                         let mut key = Key {
@@ -328,7 +374,7 @@ mod tests {
                         };
                         for (offset, changed) in [(0., false), (17., false), (17., true)] {
                             if changed {
-                                let index = (0..4).find(|i| !indices.contains(i)).unwrap_or(0);
+                                let index = (1..5).find(|i| !indices.contains(i)).unwrap_or(1);
                                 let mut a = doc.annotations()[index].clone();
                                 a.effects.border_width = if a.effects.border_width == 3. {
                                     11.

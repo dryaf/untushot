@@ -66,7 +66,7 @@ fn gtk_autosave_workflow() {
     let first = e.project_path.borrow().clone().unwrap();
     assert!(first.starts_with(directory.path().join("Screenshots")));
     assert_eq!(
-        open_document(&first).unwrap().0.annotations()[0].label,
+        open_document(&first).unwrap().0.annotations()[1].label,
         "First arrow"
     );
     assert_eq!(
@@ -78,7 +78,7 @@ fn gtk_autosave_workflow() {
     edit(&e, "Second arrow");
     assert!(e.can_discard());
     assert_ne!(e.project_path.borrow().as_ref(), Some(&first));
-    assert_eq!(open_document(&first).unwrap().0.annotations().len(), 1);
+    assert_eq!(open_document(&first).unwrap().0.annotations().len(), 2);
 
     // Exported images retain editable layers beside them; subsequent edits
     // update the sidecar without changing the PNG being shared.
@@ -104,7 +104,7 @@ fn gtk_autosave_workflow() {
     e.save_recovery().unwrap();
     e.session.borrow().as_ref().unwrap().flush().unwrap();
     e.poll_recovery();
-    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 2);
+    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 3);
     assert_eq!(std::fs::read(&png).unwrap(), pixels);
     assert!(autosave::matches_image(&png));
     assert!(e.open_path(&png));
@@ -116,24 +116,24 @@ fn gtk_autosave_workflow() {
             .unwrap()
             .annotations()
             .len(),
-        2
+        3
     );
 
     // Undo and redo are persisted too, including a return to the original.
     edit(&e, "Undo me");
     e.history(false);
     e.flush_autosave().unwrap();
-    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 2);
+    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 3);
     e.history(true);
     e.flush_autosave().unwrap();
-    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 3);
+    assert_eq!(open_document(&sidecar).unwrap().0.annotations().len(), 4);
 
     // Restart retains the association, and concurrent writers are refused.
     assert!(autosave::Target::open(sidecar.clone(), Some(png.clone()), true).is_err());
     assert!(e.shutdown());
     let (session, restored) =
         recovery::Session::open(&directory.path().join("recovery"), true).unwrap();
-    assert_eq!(restored.unwrap().annotations().len(), 3);
+    assert_eq!(restored.unwrap().annotations().len(), 4);
     let location = session.restored_autosave.clone().unwrap();
     let target = autosave::Target::restore(&location).unwrap();
     assert_eq!(target.path, sidecar);
@@ -165,11 +165,11 @@ fn gtk_autosave_workflow() {
             .unwrap()
             .annotations()
             .len(),
-        4
+        5
     );
     assert_eq!(std::fs::read(&sidecar).unwrap(), b"external change");
     let recovery = e.session.borrow().as_ref().unwrap().path.clone();
-    assert_eq!(open_document(&recovery).unwrap().0.annotations().len(), 4);
+    assert_eq!(open_document(&recovery).unwrap().0.annotations().len(), 5);
     assert!(e.save_project_to(&directory.path().join("Rescued.untushot")));
     assert!(e.can_discard());
     e.dismiss_error();
@@ -178,14 +178,16 @@ fn gtk_autosave_workflow() {
     // as an image rather than replaced by an outdated editable snapshot.
     assert!(!autosave::matches_image(&png));
     assert!(e.open_path(&png));
-    assert!(e
-        .state
-        .borrow()
-        .document
-        .as_ref()
-        .unwrap()
-        .annotations()
-        .is_empty());
+    assert!(
+        e.state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .annotations()
+            .len()
+            == 1
+    );
     e.preferences.borrow_mut().export_directory = Some(directory.path().join("Screenshots"));
     edit(&e, "New version");
     assert!(e.can_discard());
@@ -200,7 +202,7 @@ fn gtk_autosave_workflow() {
     edit(&e, "Recovery despite destination failure");
     assert!(!e.can_discard());
     assert_eq!(
-        open_document(&recovery).unwrap().0.annotations()[0].label,
+        open_document(&recovery).unwrap().0.annotations()[1].label,
         "Recovery despite destination failure"
     );
     assert!(e.save_project_to(&directory.path().join("Rescued-again.untushot")));
@@ -224,7 +226,7 @@ fn gtk_autosave_workflow() {
     assert!(!e.state.borrow().dirty);
     let saved = e.project_path.borrow().clone().unwrap();
     assert_eq!(
-        open_document(&saved).unwrap().0.annotations()[0].label,
+        open_document(&saved).unwrap().0.annotations()[1].label,
         "Saved by the timer"
     );
     assert!(e.shutdown());
@@ -232,12 +234,12 @@ fn gtk_autosave_workflow() {
     let e = launch(&app, Args::parse_from(["untushot"]));
     assert_eq!(e.project_path.borrow().as_ref(), Some(&saved));
     assert_eq!(
-        e.state.borrow().document.as_ref().unwrap().annotations()[0].label,
+        e.state.borrow().document.as_ref().unwrap().annotations()[1].label,
         "Saved by the timer"
     );
     edit(&e, "After restart");
     assert!(e.can_discard());
-    assert_eq!(open_document(&saved).unwrap().0.annotations().len(), 2);
+    assert_eq!(open_document(&saved).unwrap().0.annotations().len(), 3);
     assert!(e.shutdown());
     e.window.close();
     guard.remove();

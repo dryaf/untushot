@@ -530,7 +530,7 @@ fn record_feature_showcase() {
     reset(&e);
     seed(&e);
     let mut r = Recorder::new("04-text", "Edit the words. Keep your place.");
-    e.select_new_image(2, "Edit text directly on the canvas");
+    e.select_new_image(3, "Edit text directly on the canvas");
     e.text(Point::default());
     r.shot(&e, "Double-click a text layer to edit in place", 1.4);
     let buffer = e.inline_input.buffer().unwrap();
@@ -574,19 +574,22 @@ fn gtk_localized_ui() {
     app.register(gio::Cancellable::NONE).unwrap();
     let e = build(&app, Args::parse_from(["untushot", "--demo"]));
     reset(&e);
-    assert_eq!(e.layers_heading.text(), crate::i18n::tr("Ebenen"));
+    assert_eq!(
+        e.layers_heading.text(),
+        crate::i18n::format!("Ebenen · {layer_count}", layer_count = 1)
+    );
     assert_eq!(
         e.storage_caption.text(),
         crate::i18n::tr("Projekt: ungespeichert")
     );
     seed(&e);
-    e.select_new_image(0, "Test");
+    e.select_new_image(1, "Test");
     e.begin_layer_rename();
     e.layer_name
         .set_text("Meine Ebene / My layer / Mi capa / Mon calque");
     e.finish_layer_rename(true);
     assert_eq!(
-        e.state.borrow().document.as_ref().unwrap().annotations()[0].label,
+        e.state.borrow().document.as_ref().unwrap().annotations()[1].label,
         "Meine Ebene / My layer / Mi capa / Mon calque"
     );
     e.file_menu.set_active(true);
@@ -630,7 +633,7 @@ fn expand_properties(e: &Editor) {
 fn more_features(e: &Rc<Editor>, directory: &Path) {
     reset(e);
     seed(e);
-    e.select_new_image(0, "Choose a style without leaving the canvas");
+    e.select_new_image(1, "Choose a style without leaving the canvas");
     let mut r = Recorder::new("05-style", "Your colors. Your line weight.");
     r.shot(e, "Select a shape to change its appearance", 1.1);
     e.width_picker.set_active(true);
@@ -759,7 +762,7 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
 
     reset(e);
     seed(e);
-    e.select_new_image(0, "Position and size");
+    e.select_new_image(1, "Position and size");
     expand_properties(e);
     let mut r = Recorder::new("09-precision", "Place it exactly where you mean.");
     r.shot(e, "Position and size · Editable numeric fields", 1.4);
@@ -772,7 +775,7 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
     r.point(e, &e.properties[2]);
     r.shot(e, "Width / height · Work in original image pixels", 1.6);
     e.commit_pending_edits();
-    let a = e.state.borrow().document.as_ref().unwrap().annotations()[0].bounds();
+    let a = e.state.borrow().document.as_ref().unwrap().annotations()[1].bounds();
     draw_gesture(
         e,
         &mut r,
@@ -786,11 +789,11 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
     reset(e);
     seed(e);
     e.snapping.set_active(true);
-    e.select_new_image(2, "Snap to object edges and centers");
+    e.select_new_image(3, "Snap to object edges and centers");
     let mut r = Recorder::new("10-snapping", "Let the guides do the lining up.");
     r.point(e, &e.snapping);
     r.shot(e, "S · Enable snapping to edges and centers", 1.5);
-    let b = e.state.borrow().document.as_ref().unwrap().annotations()[2].bounds();
+    let b = e.state.borrow().document.as_ref().unwrap().annotations()[3].bounds();
     let (x, y) = canvas(e, b.x + b.w / 2., b.y + b.h / 2.);
     e.press(x, y, false);
     for i in 1..=12 {
@@ -872,7 +875,7 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
         2.,
     );
     e.storage_button.set_active(false);
-    e.select_new_image(0, "Keep editing");
+    e.select_new_image(1, "Keep editing");
     e.nudge(40., 0., false);
     r.shot(e, "Keep editing · No project-save prompt", 1.5);
     e.flush_autosave().unwrap();
@@ -894,7 +897,7 @@ fn more_features(e: &Rc<Editor>, directory: &Path) {
         "Reopen the PNG · Its sidecar restores every editable layer",
         1.8,
     );
-    e.select_new_image(2, "Editable text restored");
+    e.select_new_image(3, "Editable text restored");
     e.text(Point::default());
     r.shot(e, "Pick up exactly where you left off", 1.8);
     e.finish_text(false);
@@ -1221,7 +1224,7 @@ fn menu_features(e: &Rc<Editor>, app: &gtk::Application) {
         "22-object-actions",
         "The right action, right at the object.",
     );
-    e.select_new_image(0, "Right-click an object");
+    e.select_new_image(1, "Right-click an object");
     let (x, y) = canvas(e, 350., 260.);
     let menu = e.menu_at_object(x, y).unwrap();
     menu.set_property("tearoff-state", true);
@@ -1273,7 +1276,7 @@ fn menu_features(e: &Rc<Editor>, app: &gtk::Application) {
         }
     }
     e.refresh();
-    e.select_new_image(0, "Many layers, all editable");
+    e.select_new_image(1, "Many layers, all editable");
     e.border_enabled.set_active(true);
     e.shadow_enabled.set_active(true);
     let mut r = Recorder::new("23-layer-space", "Keep the controls. Scroll the layers.");

@@ -68,6 +68,84 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Pixbuf> {
     decode(std::io::Cursor::new(bytes))
 }
 
+/// Four-connected, exact-color bucket fill. A scanline work list avoids recursion
+/// and keeps large blank areas cheap. The returned layer contains only filled pixels.
+pub fn flood_fill(
+    source: &Pixbuf,
+    x: usize,
+    y: usize,
+    color: [u8; 4],
+) -> Result<Option<(Pixbuf, crate::geometry::Rect)>> {
+    let (w, h) = (source.width() as usize, source.height() as usize);
+    if x >= w || y >= h {
+        return Ok(None);
+    }
+    let bytes = source.read_pixel_bytes();
+    let channels = source.n_channels() as usize;
+    let stride = source.rowstride() as usize;
+    let pixel = |x: usize, y: usize| {
+        let offset = y * stride + x * channels;
+        let p = &bytes.as_ref()[offset..offset + channels];
+        let alpha = if channels == 4 { p[3] } else { 255 };
+        if alpha == 0 {
+            [0; 4]
+        } else {
+            [p[0], p[1], p[2], alpha]
+        }
+    };
+    let target = pixel(x, y);
+    if target == color {
+        return Ok(None);
+    }
+    let mut filled = vec![false; w * h];
+    let mut pending = vec![(x, y)];
+    let (mut left, mut top, mut right, mut bottom) = (x, y, x, y);
+    while let Some((x, y)) = pending.pop() {
+        if filled[y * w + x] {
+            continue;
+        }
+        let mut start = x;
+        while start > 0 && !filled[y * w + start - 1] && pixel(start - 1, y) == target {
+            start -= 1;
+        }
+        let mut end = x;
+        while end + 1 < w && !filled[y * w + end + 1] && pixel(end + 1, y) == target {
+            end += 1;
+        }
+        filled[y * w + start..=y * w + end].fill(true);
+        left = left.min(start);
+        right = right.max(end);
+        top = top.min(y);
+        bottom = bottom.max(y);
+        for adjacent in [y.checked_sub(1), (y + 1 < h).then_some(y + 1)]
+            .into_iter()
+            .flatten()
+        {
+            let mut run = false;
+            for column in start..=end {
+                let matches = !filled[adjacent * w + column] && pixel(column, adjacent) == target;
+                if matches && !run {
+                    pending.push((column, adjacent));
+                }
+                run = matches;
+            }
+        }
+    }
+    let width = right - left + 1;
+    let height = bottom - top + 1;
+    let image = image::RgbaImage::from_fn(width as u32, height as u32, |x, y| {
+        image::Rgba(if filled[(top + y as usize) * w + left + x as usize] {
+            color
+        } else {
+            [0; 4]
+        })
+    });
+    Ok(Some((
+        from_rgba(image)?,
+        crate::geometry::Rect::new(left as f64, top as f64, width as f64, height as f64),
+    )))
+}
+
 pub fn write_png(image: &Pixbuf, writer: impl Write) -> Result<()> {
     let width = image.width() as usize;
     let height = image.height() as usize;
@@ -94,6 +172,41 @@ pub fn write_png(image: &Pixbuf, writer: impl Write) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bucket_fill_respects_boundaries_diagonals_alpha_and_row_padding() {
+        let mut source = image::RgbaImage::from_pixel(7, 7, image::Rgba([255, 255, 255, 255]));
+        for y in 0..7 {
+            source.put_pixel(3, y, image::Rgba([0, 0, 0, 255]));
+        }
+        source.put_pixel(0, 0, image::Rgba([0, 0, 0, 255]));
+        let source = from_rgba(source).unwrap();
+        let (fill, bounds) = flood_fill(&source, 1, 1, [255, 0, 0, 255])
+            .unwrap()
+            .unwrap();
+        assert_eq!(bounds, crate::geometry::Rect::new(0., 0., 3., 7.));
+        assert_eq!(&fill.read_pixel_bytes().as_ref()[..4], &[0, 0, 0, 0]);
+        assert_eq!(&fill.read_pixel_bytes().as_ref()[4..8], &[255, 0, 0, 255]);
+        assert!(flood_fill(&source, 7, 0, [0; 4]).unwrap().is_none());
+        let source = from_rgba(image::RgbaImage::from_fn(2, 2, |x, y| {
+            image::Rgba(if x == y {
+                [123, 44, 66, 0]
+            } else {
+                [0, 0, 0, 128]
+            })
+        }))
+        .unwrap();
+        let (_, bounds) = flood_fill(&source, 0, 0, [1, 2, 3, 255]).unwrap().unwrap();
+        assert_eq!(bounds, crate::geometry::Rect::new(0., 0., 1., 1.));
+        // RGB pixbuf rows may be padded; the last row and column must still fill.
+        let source = Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, false, 8, 301, 200).unwrap();
+        source.fill(0xffffffff);
+        let (fill, bounds) = flood_fill(&source, 300, 199, [0, 0, 0, 255])
+            .unwrap()
+            .unwrap();
+        assert_eq!(bounds, crate::geometry::Rect::new(0., 0., 301., 200.));
+        assert_eq!(fill.read_pixel_bytes().as_ref().len(), 301 * 200 * 4);
+    }
 
     #[test]
     fn import_preserves_long_page_footer_and_alpha() {

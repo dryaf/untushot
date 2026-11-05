@@ -32,6 +32,10 @@ The GUI harness uses **Broadway**, isolated XDG directories and an in-memory
 settings backend. Install `broadwayd` with your distribution's GTK 3 tools.
 The harness never connects to your desktop display or clipboard.
 
+Run `python3 tools/test_clipboard.py --suite pixel-edits` for the focused selection
+deletion and bucket-fill workflow, including keyboard shortcuts and undo/redo.
+Use `--suite background` to check the original image's layer controls and persistence.
+
 The editing-session test exercises 140 document changes, including ten text
 sessions, and traverses the complete 100-step retained undo/redo history. It then
 compares editable layers and rendered pixels across project save/reopen, PNG,

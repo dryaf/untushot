@@ -9,6 +9,9 @@ use std::{
 };
 
 const UNDO_LIMIT: usize = 100;
+// The original raster is already stored separately for project/recovery writes.
+// Reference it as a normal layer without copying or re-encoding its pixels.
+const BACKGROUND_IMAGE: u64 = 0;
 
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Tool {
@@ -24,10 +27,12 @@ pub enum Tool {
     Text,
     Image(u64),
     Marquee,
+    Fill,
+    Erase,
 }
 
 impl Tool {
-    pub const ALL: [(Tool, &'static str, &'static str); 11] = [
+    pub const ALL: [(Tool, &'static str, &'static str); 12] = [
         (Self::Move, "Objekt bearbeiten", "V"),
         (Self::Select, "Zuschneiden", "1"),
         (Self::Pen, "Stift", "2"),
@@ -39,6 +44,7 @@ impl Tool {
         (Self::Redact, "Schwärzen", "8"),
         (Self::Text, "Text", "9"),
         (Self::Marquee, "Auswahl", "M"),
+        (Self::Fill, "Füllen", "F"),
     ];
 }
 
@@ -270,11 +276,19 @@ impl Document {
         Ok(Self::from_surface(surface, monitors))
     }
     fn from_surface(image: ImageSurface, monitors: Vec<Monitor>) -> Self {
+        let background = image_annotation(
+            BACKGROUND_IMAGE,
+            crate::i18n::tr("Hintergrund").into(),
+            Rect::new(0., 0., image.width() as f64, image.height() as f64),
+        );
         Self {
             image,
             images: BTreeMap::new(),
             monitors,
-            current: Snapshot::default(),
+            current: Snapshot {
+                annotations: vec![background],
+                ..Default::default()
+            },
             undo: Vec::new(),
             redo: Vec::new(),
             revision: 0,
@@ -292,6 +306,22 @@ impl Document {
     }
     pub fn bounds(&self) -> Rect {
         Rect::new(0.0, 0.0, self.width() as f64, self.height() as f64)
+    }
+    pub fn has_edits(&self) -> bool {
+        self.content_id() > 0
+            || self.selection().is_some()
+            || self.is_composition()
+            || self.annotations()
+                != [image_annotation(
+                    BACKGROUND_IMAGE,
+                    crate::i18n::tr("Hintergrund").into(),
+                    Rect::new(
+                        0.,
+                        0.,
+                        self.image.width() as f64,
+                        self.image.height() as f64,
+                    ),
+                )]
     }
     pub fn is_composition(&self) -> bool {
         self.current.canvas.is_some()
@@ -337,6 +367,71 @@ impl Document {
         )
     }
 
+    /// Clear the visible selection while retaining the underlying editable layers.
+    pub fn delete_region(&mut self, rect: Rect) -> bool {
+        let (x, y, w, h) = rect
+            .clamp(self.selection().unwrap_or(self.bounds()))
+            .pixel_bounds(self.width(), self.height());
+        if w <= 0 || h <= 0 {
+            return false;
+        }
+        self.add(Annotation {
+            tool: Tool::Erase,
+            points: vec![
+                Point::new(x as f64, y as f64),
+                Point::new((x + w) as f64, (y + h) as f64),
+            ],
+            label: crate::i18n::tr("Gelöschte Auswahl").into(),
+            effects: Default::default(),
+            clip: None,
+            font_size: None,
+            color: (0., 0., 0.),
+            width: 1.,
+            text: String::new(),
+            visible: true,
+        });
+        true
+    }
+
+    /// Sample visible pixels, then retain just the connected fill as a new layer.
+    pub fn fill_region(&mut self, point: Point, color: (f64, f64, f64)) -> Result<bool> {
+        let region = self.selection().unwrap_or(self.bounds());
+        if !point.x.is_finite()
+            || !point.y.is_finite()
+            || point.x < region.x
+            || point.y < region.y
+            || point.x >= region.right()
+            || point.y >= region.bottom()
+        {
+            return Ok(false);
+        }
+        let (x, y, w, h) = region.pixel_bounds(self.width(), self.height());
+        validate_canvas(i64::from(w), i64::from(h))?;
+        let source = self.export_region(region)?;
+        let rgba = [color.0, color.1, color.2].map(|c| (c.clamp(0., 1.) * 255.).round() as u8);
+        let Some((image, bounds)) = crate::pixels::flood_fill(
+            &source,
+            (point.x.floor() as i32 - x) as usize,
+            (point.y.floor() as i32 - y) as usize,
+            [rgba[0], rgba[1], rgba[2], 255],
+        )?
+        else {
+            return Ok(false);
+        };
+        self.insert_image(
+            image,
+            Rect::new(bounds.x + x as f64, bounds.y + y as f64, bounds.w, bounds.h),
+            crate::i18n::tr("Füllung").into(),
+        )?;
+        Ok(true)
+    }
+
+    pub fn has_erasure(&self) -> bool {
+        self.annotations()
+            .iter()
+            .any(|a| a.visible && a.tool == Tool::Erase)
+    }
+
     pub fn append_image_right(&mut self, image: Pixbuf, label: String) -> Result<usize> {
         let (x, y, w, h) = self
             .selection()
@@ -345,43 +440,16 @@ impl Document {
         let width = i64::from(w) + 24 + i64::from(image.width());
         let height = h.max(image.height());
         validate_canvas(width, i64::from(height))?;
-        let base_pixels = if self.is_composition() {
-            0
-        } else {
-            i64::from(w) * i64::from(h)
-        };
-        self.ensure_image_capacity(
-            base_pixels + i64::from(image.width()) * i64::from(image.height()),
-        )?;
+        self.ensure_image_capacity(i64::from(image.width()) * i64::from(image.height()))?;
         let view = Rect::new(x as f64, y as f64, w as f64, h as f64);
         // Prepare all fallible work before mutating history or the document.
         let asset = ImageAsset::new(image)?;
-        let base = if self.is_composition() {
-            None
-        } else {
-            let surface = ImageSurface::create(Format::ARgb32, w, h)?;
-            let cr = Cairo::new(&surface)?;
-            cr.set_source_surface(&self.image, -f64::from(x), -f64::from(y))?;
-            cr.paint()?;
-            Some(ImageAsset::new(surface_to_pixbuf(&surface)?)?)
-        };
         let mut annotations = self.current.annotations.clone();
         for a in &mut annotations {
             a.clip = Some(a.clip.unwrap_or(view).clamp(view));
             *a = a.translated(-f64::from(x), -f64::from(y));
         }
         self.checkpoint();
-        if let Some(base) = base {
-            let id = self.insert_asset(base);
-            annotations.insert(
-                0,
-                image_annotation(
-                    id,
-                    crate::i18n::tr("Ausgangsbild").into(),
-                    Rect::new(0., 0., w as f64, h as f64),
-                ),
-            );
-        }
         let rect = Rect::new(
             f64::from(w + 24),
             0.,
@@ -652,7 +720,11 @@ impl Document {
         cr.save()?;
         cr.rectangle(0.0, 0.0, self.bounds().w, self.bounds().h);
         cr.clip();
-        self.paint_background(cr)?;
+        // Clear operations must affect document pixels, never the UI behind it.
+        let isolated = self.has_erasure();
+        if isolated {
+            cr.push_group();
+        }
         for (index, original) in self.current.annotations.iter().enumerate() {
             let a = replacements
                 .iter()
@@ -661,23 +733,25 @@ impl Document {
                 .unwrap_or(original);
             self.paint_layer(cr, a)?;
         }
-        cr.restore()?;
-        Ok(())
-    }
-    pub fn paint_background(&self, cr: &Cairo) -> Result<()> {
-        if !self.is_composition() {
-            cr.set_source_surface(&self.image, 0., 0.)?;
+        if isolated {
+            cr.pop_group_to_source()?;
             cr.paint()?;
         }
+        cr.restore()?;
         Ok(())
     }
     pub fn paint_layer(&self, cr: &Cairo, a: &Annotation) -> Result<()> {
         if let Tool::Image(id) = a.tool {
             if a.visible {
-                let asset = self
-                    .images
-                    .get(&id)
-                    .ok_or_else(|| crate::i18n::anyhow!("Bildebene fehlt"))?;
+                let surface = if id == BACKGROUND_IMAGE {
+                    &self.image
+                } else {
+                    &self
+                        .images
+                        .get(&id)
+                        .ok_or_else(|| crate::i18n::anyhow!("Bildebene fehlt"))?
+                        .surface
+                };
                 let r = a.bounds();
                 cr.save()?;
                 if let Some(clip) = a.clip {
@@ -689,11 +763,8 @@ impl Document {
                 cr.rectangle(r.x, r.y, r.w, r.h);
                 cr.clip();
                 cr.translate(r.x, r.y);
-                cr.scale(
-                    r.w / asset.surface.width() as f64,
-                    r.h / asset.surface.height() as f64,
-                );
-                cr.set_source_surface(&asset.surface, 0., 0.)?;
+                cr.scale(r.w / surface.width() as f64, r.h / surface.height() as f64);
+                cr.set_source_surface(surface, 0., 0.)?;
                 cr.source().set_extend(cairo::Extend::Pad);
                 cr.source().set_filter(cairo::Filter::Bilinear);
                 cr.paint()?;
@@ -874,9 +945,9 @@ impl Document {
     }
     pub fn read_project(reader: impl std::io::Read) -> Result<Self> {
         use base64::Engine;
-        let project: Project = serde_json::from_reader(reader.take(512 * 1024 * 1024))?;
+        let mut project: Project = serde_json::from_reader(reader.take(512 * 1024 * 1024))?;
         crate::i18n::ensure!(
-            matches!(project.version, 1..=4),
+            matches!(project.version, 1..=6),
             "Unbekannte Projektversion"
         );
         for a in &project.snapshot.annotations {
@@ -897,7 +968,10 @@ impl Document {
                             && r.h >= 0.)
                     && !a.text.contains('\0')
                     && !a.label.contains('\0')
-                    && !matches!(a.tool, Tool::Move | Tool::Select | Tool::Marquee),
+                    && !matches!(
+                        a.tool,
+                        Tool::Move | Tool::Select | Tool::Marquee | Tool::Fill
+                    ),
                 "Ungültige Annotation im Projekt"
             );
         }
@@ -918,6 +992,10 @@ impl Document {
         }
         let mut pixels = 0_u64;
         for (id, png) in project.images {
+            crate::i18n::ensure!(
+                project.version < 6 || id != BACKGROUND_IMAGE,
+                "Ungültige Bildebene im Projekt"
+            );
             let bytes = base64::engine::general_purpose::STANDARD.decode(&png)?;
             let rgba = crate::pixels::decode_layer(&bytes)?;
             pixels += u64::from(rgba.width()) * u64::from(rgba.height());
@@ -925,10 +1003,23 @@ impl Document {
             let asset = ImageAsset::from_encoded(crate::pixels::from_rgba(rgba)?, Arc::new(png))?;
             doc.images.insert(id, asset);
         }
+        // Older projects allowed asset ID zero. Relocate it before reserving
+        // zero for the original raster; compositions already have a base layer.
+        if project.version < 6 {
+            if let Some(asset) = doc.images.remove(&BACKGROUND_IMAGE) {
+                let id = doc.insert_asset(asset);
+                for a in &mut project.snapshot.annotations {
+                    if a.tool == Tool::Image(BACKGROUND_IMAGE) {
+                        a.tool = Tool::Image(id);
+                    }
+                }
+            }
+        }
         for a in &project.snapshot.annotations {
             if let Tool::Image(id) = a.tool {
                 crate::i18n::ensure!(
-                    doc.images.contains_key(&id)
+                    (doc.images.contains_key(&id)
+                        || (project.version >= 6 && id == BACKGROUND_IMAGE))
                         && a.points.len() == 2
                         && a.bounds().w > 0.
                         && a.bounds().h > 0.
@@ -937,6 +1028,12 @@ impl Document {
                     "Ungültige Bildebene im Projekt"
                 );
             }
+        }
+        if project.version < 6 && project.snapshot.canvas.is_none() {
+            project
+                .snapshot
+                .annotations
+                .insert(0, doc.annotations()[0].clone());
         }
         doc.current = project.snapshot;
         if let Some(r) = doc.current.selection {
@@ -1001,7 +1098,7 @@ impl SavedEdits {
                     .iter()
                     .map(|(id, png)| (*id, png.as_str()))
                     .collect(),
-                version: 4,
+                version: 6,
                 background,
                 snapshot: &self.snapshot,
                 monitors: &self.monitors,
@@ -1079,6 +1176,11 @@ pub fn paint_annotation(cr: &Cairo, a: &Annotation) -> Result<()> {
     cr.set_line_cap(cairo::LineCap::Round);
     cr.set_line_join(cairo::LineJoin::Round);
     match a.tool {
+        Tool::Erase => {
+            cr.set_operator(cairo::Operator::Clear);
+            cr.rectangle(r.x, r.y, r.w, r.h);
+            cr.fill()?;
+        }
         Tool::Pen => {
             cr.move_to(first.x, first.y);
             for p in &a.points {
@@ -1283,6 +1385,179 @@ mod tests {
     }
 
     #[test]
+    fn background_is_an_editable_layer_without_an_initial_undo_step() {
+        let mut doc = Document::new(solid(12, 10, 0xff0000ff), vec![]).unwrap();
+        let original = doc.annotations()[0].clone();
+        assert_eq!(original.tool, Tool::Image(BACKGROUND_IMAGE));
+        assert_eq!(original.name(), crate::i18n::tr("Hintergrund"));
+        assert!(!doc.can_undo());
+        assert!(!doc.has_edits());
+        let mut hidden = original.clone();
+        hidden.visible = false;
+        doc.replace(0, hidden);
+        assert_eq!(pixel(&doc.export().unwrap(), 5, 5), [0; 4]);
+        doc.undo();
+        assert!(!doc.has_edits());
+        doc.replace(0, original.resized(6., 5.).translated(3., 2.));
+        assert_eq!((doc.width(), doc.height()), (12, 10));
+        assert_eq!(pixel(&doc.export().unwrap(), 0, 0), [0; 4]);
+        assert_eq!(pixel(&doc.export().unwrap(), 5, 4), [255, 0, 0, 255]);
+        doc.undo();
+        let copies = doc.duplicate_many(&[0]);
+        assert_eq!(doc.annotations()[copies[0]].tool, original.tool);
+        assert!(doc.images.is_empty(), "copies share the original raster");
+        doc.undo();
+        doc.insert_image(
+            solid(2, 2, 0x0000ffff),
+            Rect::new(0., 0., 2., 2.),
+            "blue".into(),
+        )
+        .unwrap();
+        assert_eq!(pixel(&doc.export().unwrap(), 0, 0), [0, 0, 255, 255]);
+        assert_eq!(doc.reorder(0, true), 1);
+        assert_eq!(pixel(&doc.export().unwrap(), 0, 0), [255, 0, 0, 255]);
+        doc.undo();
+        doc.remove_many(&[0]);
+        assert_eq!(pixel(&doc.export().unwrap(), 5, 5), [0; 4]);
+        assert_eq!(pixel(&doc.export().unwrap(), 0, 0), [0, 0, 255, 255]);
+        let mut project = Vec::new();
+        doc.write_project(&mut project).unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&project).unwrap();
+        let mut recovery = Vec::new();
+        doc.recovery_edits()
+            .write(json["background"].as_str().unwrap(), &mut recovery)
+            .unwrap();
+        for bytes in [&project, &recovery] {
+            let loaded = Document::read_project(bytes.as_slice()).unwrap();
+            assert_eq!(loaded.annotations(), doc.annotations());
+            assert_eq!(
+                loaded.export().unwrap().read_pixel_bytes(),
+                doc.export().unwrap().read_pixel_bytes()
+            );
+        }
+        doc.undo();
+        assert_eq!(doc.annotations()[0], original);
+        doc.redo();
+        doc.remove_many(&[0]);
+        assert!(doc.annotations().is_empty());
+        project.clear();
+        doc.write_project(&mut project).unwrap();
+        let empty = Document::read_project(project.as_slice()).unwrap();
+        assert!(empty.annotations().is_empty());
+        assert_eq!(pixel(&empty.export().unwrap(), 5, 5), [0; 4]);
+    }
+
+    #[test]
+    fn legacy_backgrounds_migrate_without_duplicate_layers_or_asset_collisions() {
+        let mut doc = Document::new(solid(12, 10, 0xff0000ff), vec![]).unwrap();
+        doc.insert_image(
+            solid(2, 2, 0x0000ffff),
+            Rect::new(0., 0., 2., 2.),
+            "blue".into(),
+        )
+        .unwrap();
+        let expected = doc.export().unwrap().read_pixel_bytes();
+        let mut bytes = Vec::new();
+        doc.write_project(&mut bytes).unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        for version in 1..=5 {
+            let mut legacy = json.clone();
+            legacy["version"] = version.into();
+            legacy["snapshot"]["annotations"]
+                .as_array_mut()
+                .unwrap()
+                .remove(0);
+            let png = legacy["images"]
+                .as_object_mut()
+                .unwrap()
+                .remove("1")
+                .unwrap();
+            legacy["images"]["0"] = png;
+            legacy["snapshot"]["annotations"][0]["tool"]["Image"] = 0.into();
+            let loaded =
+                Document::read_project(serde_json::to_vec(&legacy).unwrap().as_slice()).unwrap();
+            assert_eq!(loaded.annotations().len(), 2);
+            assert_eq!(loaded.annotations()[0].tool, Tool::Image(BACKGROUND_IMAGE));
+            assert_ne!(loaded.annotations()[1].tool, Tool::Image(BACKGROUND_IMAGE));
+            assert_eq!(loaded.export().unwrap().read_pixel_bytes(), expected);
+            assert!(!loaded.can_undo());
+        }
+        // Legacy compositions already contain their background as an image asset.
+        let mut composition = json;
+        composition["version"] = 4.into();
+        composition["snapshot"]["canvas"] = serde_json::json!([12, 10]);
+        composition["images"]["0"] = composition["background"].clone();
+        let loaded =
+            Document::read_project(serde_json::to_vec(&composition).unwrap().as_slice()).unwrap();
+        assert_eq!(loaded.annotations().len(), 2);
+        assert_eq!(loaded.export().unwrap().read_pixel_bytes(), expected);
+    }
+
+    #[test]
+    fn delete_and_fill_preserve_crop_layers_history_and_project() {
+        let mut doc = Document::new(solid(12, 10, 0xffffffff), vec![]).unwrap();
+        doc.insert_image(
+            solid(4, 4, 0xff0000ff),
+            Rect::new(2., 2., 4., 4.),
+            "red".into(),
+        )
+        .unwrap();
+        let crop = Rect::new(1., 1., 10., 8.);
+        doc.select(Some(crop));
+        let before = doc.content_id();
+        assert!(doc.delete_region(Rect::new(3., 3., 4., 3.)));
+        assert_eq!(doc.annotations().len(), 3);
+        assert_eq!(
+            pixel(&doc.export_region(doc.bounds()).unwrap(), 3, 3),
+            [0, 0, 0, 0]
+        );
+        assert_eq!(
+            pixel(&doc.export_region(doc.bounds()).unwrap(), 2, 2),
+            [255, 0, 0, 255]
+        );
+        let deleted = doc.content_id();
+        assert!(doc.fill_region(Point::new(4., 4.), (0., 0., 1.)).unwrap());
+        assert_eq!(doc.selection(), Some(crop));
+        let output = doc.export_region(doc.bounds()).unwrap();
+        assert_eq!(pixel(&output, 3, 3), [0, 0, 255, 255]);
+        assert_eq!(pixel(&output, 6, 5), [0, 0, 255, 255]);
+        assert_eq!(pixel(&output, 7, 5), [255, 255, 255, 255]);
+        let filled = doc.content_id();
+        assert!(!doc.fill_region(Point::new(4., 4.), (0., 0., 1.)).unwrap());
+        assert!(!doc.fill_region(Point::new(11., 4.), (0., 0., 1.)).unwrap());
+        assert_eq!(doc.content_id(), filled);
+        let mut project = Vec::new();
+        doc.write_project(&mut project).unwrap();
+        let restored = Document::read_project(project.as_slice()).unwrap();
+        assert_eq!(restored.selection(), Some(crop));
+        assert_eq!(
+            restored.export().unwrap().read_pixel_bytes(),
+            doc.export().unwrap().read_pixel_bytes()
+        );
+        doc.undo();
+        assert_eq!(doc.content_id(), deleted);
+        assert_eq!(
+            pixel(&doc.export_region(doc.bounds()).unwrap(), 3, 3),
+            [0, 0, 0, 0]
+        );
+        doc.undo();
+        assert_eq!(doc.content_id(), before);
+        assert_eq!(
+            pixel(&doc.export_region(doc.bounds()).unwrap(), 3, 3),
+            [255, 0, 0, 255]
+        );
+        doc.redo();
+        doc.redo();
+        assert_eq!(doc.content_id(), filled);
+        // Clearing beyond the crop cannot touch the original pixels outside it.
+        assert!(doc.delete_region(doc.bounds()));
+        let output = doc.export_region(doc.bounds()).unwrap();
+        assert_eq!(pixel(&output, 0, 0), [255, 255, 255, 255]);
+        assert_eq!(pixel(&output, 1, 1), [0, 0, 0, 0]);
+        assert!(!doc.delete_region(Rect::new(20., 20., 2., 2.)));
+    }
+
+    #[test]
     fn property_previews_share_undo_but_preserve_other_actions_and_saved_ids() {
         let mut doc = Document::new(solid(100, 80, 0xffffffff), vec![]).unwrap();
         doc.insert_image(
@@ -1291,27 +1566,27 @@ mod tests {
             "Detail".into(),
         )
         .unwrap();
-        let original = doc.annotations()[0].clone();
+        let original = doc.annotations()[1].clone();
         let saved = doc.content_id();
         let mut token = None;
         for value in [5., 10., 18.] {
             let mut a = original.clone();
             a.effects.shadow_blur = value;
-            token = doc.replace_property(0, a, token);
+            token = doc.replace_property(1, a, token);
         }
-        let edited = doc.annotations()[0].clone();
+        let edited = doc.annotations()[1].clone();
         doc.undo();
-        assert_eq!(doc.annotations()[0], original);
+        assert_eq!(doc.annotations()[1], original);
         assert_eq!(doc.content_id(), saved);
         doc.redo();
-        assert_eq!(doc.annotations()[0], edited);
+        assert_eq!(doc.annotations()[1], edited);
         // A stale continuation may not consume intervening actions, including undo.
         doc.select(Some(Rect::new(0., 0., 50., 40.)));
         let mut a = edited.clone();
         a.effects.shadow_blur = 24.;
-        doc.replace_property(0, a, token);
+        doc.replace_property(1, a, token);
         doc.undo();
-        assert_eq!(doc.annotations()[0], edited);
+        assert_eq!(doc.annotations()[1], edited);
         assert!(doc.selection().is_some());
         doc.undo();
         assert!(doc.selection().is_none());
@@ -1319,11 +1594,11 @@ mod tests {
         let before = doc.content_id();
         let mut a = edited.clone();
         a.effects.border_width = 9.;
-        let token = doc.replace_property(0, a, None);
-        assert!(doc.replace_property(0, edited, token).is_none());
+        let token = doc.replace_property(1, a, None);
+        assert!(doc.replace_property(1, edited, token).is_none());
         assert_eq!(doc.content_id(), before);
         doc.undo();
-        assert_eq!(doc.annotations()[0], original);
+        assert_eq!(doc.annotations()[1], original);
     }
 
     #[test]
@@ -1337,7 +1612,7 @@ mod tests {
             "Original".into(),
         )
         .unwrap();
-        let mut hidden = doc.annotations()[0].clone();
+        let mut hidden = doc.annotations()[1].clone();
         hidden.visible = false;
         hidden.points = vec![Point::new(0., 0.), Point::new(80., 60.)];
         doc.add(hidden);
@@ -1345,8 +1620,8 @@ mod tests {
         let before = doc.export().unwrap().read_pixel_bytes();
         let region = Rect::new(17., 12., 20., 18.);
         let index = doc.copy_region_to_layer(region).unwrap();
-        assert_eq!(index, 2);
-        assert_eq!(&doc.annotations()[..2], originals);
+        assert_eq!(index, 3);
+        assert_eq!(&doc.annotations()[..3], originals);
         assert_eq!(doc.annotations()[index].bounds(), region);
         assert_eq!(
             (doc.width(), doc.height(), doc.selection()),
@@ -1364,7 +1639,7 @@ mod tests {
         doc.undo();
         assert_eq!(doc.annotations(), originals);
         doc.redo();
-        assert_eq!(doc.annotations().len(), 3);
+        assert_eq!(doc.annotations().len(), 4);
         assert_eq!(doc.export().unwrap().read_pixel_bytes(), before);
         let revision = doc.revision();
         assert!(doc
@@ -1382,13 +1657,13 @@ mod tests {
             "Detail".into(),
         )
         .unwrap();
-        let original = doc.annotations()[0].clone();
+        let original = doc.annotations()[1].clone();
         let plain = doc.export().unwrap().read_pixel_bytes();
         let mut styled = original.clone();
         styled.effects.border = true;
         styled.effects.border_color = (0., 0., 1.);
         styled.effects.shadow = true;
-        doc.replace(0, styled.clone());
+        doc.replace(1, styled.clone());
         let rendered = doc.export().unwrap();
         assert_eq!(pixel(&rendered, 20, 25), vec![0, 0, 255, 255]);
         assert_eq!(pixel(&rendered, 30, 30), vec![255, 0, 0, 255]);
@@ -1402,23 +1677,27 @@ mod tests {
         assert_eq!(loaded.annotations(), doc.annotations());
         assert_eq!(loaded.export().unwrap().read_pixel_bytes(), decorated);
         doc.undo();
-        assert_eq!(doc.annotations()[0], original);
+        assert_eq!(doc.annotations()[1], original);
         assert_eq!(doc.export().unwrap().read_pixel_bytes(), plain);
         doc.redo();
         assert_eq!(doc.export().unwrap().read_pixel_bytes(), decorated);
         // A retained crop masks decorations too; composition must not reveal clipped pixels.
         styled.clip = Some(Rect::new(22., 22., 10., 10.));
-        doc.replace(0, styled);
+        doc.replace(1, styled);
         assert_eq!(pixel(&doc.export().unwrap(), 55, 35)[3], 0);
         // Existing formats without effects remain editable; invalid settings are rejected.
         let mut json: serde_json::Value = serde_json::from_slice(&project).unwrap();
+        json["snapshot"]["annotations"]
+            .as_array_mut()
+            .unwrap()
+            .remove(0);
         json["version"] = serde_json::json!(3);
         json["snapshot"]["annotations"][0]
             .as_object_mut()
             .unwrap()
             .remove("effects");
         let legacy = Document::read_project(serde_json::to_vec(&json).unwrap().as_slice()).unwrap();
-        assert_eq!(legacy.annotations()[0].effects, Default::default());
+        assert_eq!(legacy.annotations()[1].effects, Default::default());
         json["snapshot"]["annotations"][0]["effects"] = serde_json::json!({"shadow_blur": 1e20});
         assert!(Document::read_project(serde_json::to_vec(&json).unwrap().as_slice()).is_err());
     }
@@ -1486,7 +1765,7 @@ mod tests {
             "Rot".into(),
         )
         .unwrap();
-        doc.remove_many(&[0]);
+        doc.remove_many(&[1]);
         // Keep a different image active; duplicates must share its pixel budget.
         doc.insert_image(
             solid(8, 8, 0x0000ffff),
@@ -1494,11 +1773,11 @@ mod tests {
             "Blau".into(),
         )
         .unwrap();
-        doc.duplicate_many(&[0]);
+        doc.duplicate_many(&[1]);
         for i in 0..97 {
-            let mut layer = doc.annotations()[0].clone();
+            let mut layer = doc.annotations()[1].clone();
             layer.label = format!("Schritt {i}");
-            doc.replace(0, layer);
+            doc.replace(1, layer);
         }
         assert_eq!(doc.undo.len(), 100);
         assert_eq!(doc.images.len(), 2);
@@ -1585,14 +1864,14 @@ mod tests {
         assert_eq!(pixel(&doc.export().unwrap(), 70, 20), [34, 85, 255, 255]);
         let duplicates = doc.duplicate_many(&[index]);
         assert_eq!(doc.annotations()[duplicates[0]].tool, image.tool);
-        assert_eq!(doc.images.len(), 2, "duplicates share the decoded image");
+        assert_eq!(doc.images.len(), 1, "duplicates share the decoded image");
         doc.undo();
         doc.undo();
         doc.undo();
         assert_eq!(doc.content_id(), before_id);
         assert_eq!(doc.selection(), Some(Rect::new(20., 20., 40., 30.)));
         assert_eq!(doc.monitors().len(), 1);
-        assert_eq!(doc.annotations().len(), 2);
+        assert_eq!(doc.annotations().len(), 3);
         assert_eq!(
             doc.export().unwrap().read_pixel_bytes(),
             before.read_pixel_bytes()
@@ -1626,7 +1905,7 @@ mod tests {
         let mut bytes = Vec::new();
         doc.write_project(&mut bytes).unwrap();
         let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(json["images"].as_object().unwrap().len(), 2);
+        assert_eq!(json["images"].as_object().unwrap().len(), 1);
         let mut recovery = Vec::new();
         doc.recovery_edits()
             .write(json["background"].as_str().unwrap(), &mut recovery)
@@ -1693,11 +1972,15 @@ mod tests {
         assert_eq!(
             Document::read_project(bytes.as_slice())
                 .unwrap()
-                .annotations()[0]
+                .annotations()[1]
                 .text_size(),
             48.
         );
         let mut legacy: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        legacy["snapshot"]["annotations"]
+            .as_array_mut()
+            .unwrap()
+            .remove(0);
         legacy["version"] = serde_json::json!(1);
         legacy["snapshot"]["annotations"][0]
             .as_object_mut()
@@ -1705,7 +1988,7 @@ mod tests {
             .remove("font_size");
         let loaded =
             Document::read_project(serde_json::to_vec(&legacy).unwrap().as_slice()).unwrap();
-        assert_eq!(loaded.annotations()[0].text_size(), 88.);
+        assert_eq!(loaded.annotations()[1].text_size(), 88.);
     }
 
     #[test]
@@ -1715,12 +1998,12 @@ mod tests {
         doc.add(rectangle((0., 1., 0.)).translated(80., 40.));
         let before = doc.annotations().to_vec();
         let revision = doc.revision();
-        let copies = doc.duplicate_many(&[0, 1]);
-        assert_eq!(copies, vec![2, 3]);
-        assert_eq!(doc.annotations().len(), 4);
+        let copies = doc.duplicate_many(&[1, 2]);
+        assert_eq!(copies, vec![3, 4]);
+        assert_eq!(doc.annotations().len(), 5);
         assert_eq!(
-            doc.annotations()[2].name(),
-            crate::i18n::format!("{} · Kopie", doc.annotations()[0].name())
+            doc.annotations()[3].name(),
+            crate::i18n::format!("{} · Kopie", doc.annotations()[1].name())
         );
         doc.undo();
         assert_eq!(doc.annotations(), before);
@@ -1728,27 +2011,27 @@ mod tests {
         doc.redo();
         doc.align(&copies, Alignment::Left);
         assert_eq!(
-            doc.annotations()[2].bounds().x,
-            doc.annotations()[3].bounds().x
+            doc.annotations()[3].bounds().x,
+            doc.annotations()[4].bounds().x
         );
         doc.undo();
         assert_ne!(
-            doc.annotations()[2].bounds().x,
-            doc.annotations()[3].bounds().x
+            doc.annotations()[3].bounds().x,
+            doc.annotations()[4].bounds().x
         );
         doc.replace_many(vec![
-            (2, doc.annotations()[2].translated(1., 2.)),
             (3, doc.annotations()[3].translated(1., 2.)),
+            (4, doc.annotations()[4].translated(1., 2.)),
         ]);
         doc.undo();
         doc.remove_many(&copies);
-        assert_eq!(doc.annotations().len(), 2);
+        assert_eq!(doc.annotations().len(), 3);
         doc.undo();
-        assert_eq!(doc.annotations().len(), 4);
-        let mut renamed = doc.annotations()[0].clone();
+        assert_eq!(doc.annotations().len(), 5);
+        let mut renamed = doc.annotations()[1].clone();
         renamed.label = "Hinweis".into();
-        doc.replace(0, renamed);
-        assert_eq!(doc.annotations()[0].name(), "Hinweis");
+        doc.replace(1, renamed);
+        assert_eq!(doc.annotations()[1].name(), "Hinweis");
     }
 
     fn rectangle(color: (f64, f64, f64)) -> Annotation {
@@ -1872,8 +2155,8 @@ mod tests {
             doc.add(a);
         }
         let original = doc.annotations().to_vec();
-        for source in 0..5 {
-            for gap in 0..=5 {
+        for source in 0..6 {
+            for gap in 0..=6 {
                 let revision = doc.revision();
                 let target = doc.move_layer(source, gap).unwrap();
                 let mut expected = original.clone();
@@ -1896,8 +2179,8 @@ mod tests {
             }
         }
         let revision = doc.revision();
-        assert_eq!(doc.move_layer(5, 0), None);
-        assert_eq!(doc.move_layer(0, 6), None);
+        assert_eq!(doc.move_layer(6, 0), None);
+        assert_eq!(doc.move_layer(0, 7), None);
         assert_eq!(doc.revision(), revision);
     }
     #[test]
@@ -1905,27 +2188,27 @@ mod tests {
         let mut doc = demo().unwrap();
         doc.add(rectangle((1., 0., 0.)));
         doc.add(rectangle((0., 1., 0.)));
-        assert_eq!(doc.hit_test(Point::new(150., 120.), 2.), Some(1));
-        let mut a = doc.annotations()[1]
+        assert_eq!(doc.hit_test(Point::new(150., 120.), 2.), Some(2));
+        let mut a = doc.annotations()[2]
             .translated(40., 20.)
             .resized(200., 120.);
         assert_eq!(a.bounds(), Rect::new(140., 120., 200., 120.));
-        doc.replace(1, a.clone());
+        doc.replace(2, a.clone());
         doc.undo();
         assert_eq!(
-            doc.annotations()[1].bounds(),
+            doc.annotations()[2].bounds(),
             Rect::new(100., 100., 100., 60.)
         );
         doc.redo();
         a.visible = false;
-        doc.replace(1, a);
-        assert_eq!(doc.hit_test(Point::new(150., 130.), 2.), Some(0));
-        assert_eq!(doc.reorder(0, true), 1);
+        doc.replace(2, a);
         assert_eq!(doc.hit_test(Point::new(150., 130.), 2.), Some(1));
-        doc.remove_many(&[1]);
-        assert_eq!(doc.hit_test(Point::new(150., 130.), 2.), None);
+        assert_eq!(doc.reorder(1, true), 2);
+        assert_eq!(doc.hit_test(Point::new(150., 130.), 2.), Some(2));
+        doc.remove_many(&[2]);
+        assert_eq!(doc.hit_test(Point::new(150., 130.), 2.), Some(0));
         doc.undo();
-        assert_eq!(doc.annotations().len(), 2);
+        assert_eq!(doc.annotations().len(), 3);
     }
 
     #[test]
