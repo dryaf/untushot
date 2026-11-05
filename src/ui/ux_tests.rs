@@ -50,6 +50,27 @@ fn gtk_ux_changes() {
     e.load_preferences(&prefs);
     settle();
 
+    // New documents now contain an editable background, so the layer panel
+    // starts visible. Remove it to exercise the genuinely empty-layer state.
+    assert!(e.right_panel.is_visible());
+    assert_eq!(
+        e.state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .annotations()
+            .len(),
+        1
+    );
+    e.state
+        .borrow_mut()
+        .document
+        .as_mut()
+        .unwrap()
+        .remove_many(&[0]);
+    e.refresh();
+
     // An empty layer list gives the canvas its space back. Explicitly opening
     // it wins, and automatically hiding it must not persist as a user choice.
     assert!(!e.right_panel.is_visible());
