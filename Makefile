@@ -19,6 +19,7 @@ test-clipboard:
 test-ux:
 	$(PYTHON) tools/test_clipboard.py --suite editor
 	$(PYTHON) tools/test_clipboard.py --suite layers
+	$(PYTHON) tools/test_clipboard.py --suite editing-basics
 
 test-languages:
 	@set -e; for language in en de fr es; do $(PYTHON) tools/test_clipboard.py --suite localization --language "$$language"; done

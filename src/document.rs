@@ -51,6 +51,8 @@ impl Tool {
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Annotation {
     #[serde(default)]
+    pub locked: bool,
+    #[serde(default)]
     pub effects: crate::effects::ImageEffects,
     /// A retained crop mask, transformed together with the object.
     #[serde(default)]
@@ -68,6 +70,16 @@ pub struct Annotation {
 }
 
 impl Annotation {
+    fn allows_replacement(&self, replacement: &Self) -> bool {
+        if !self.locked {
+            return !replacement.locked;
+        }
+        // Visibility is still available on locked layers. All content, geometry,
+        // naming and lock changes go through their explicit actions.
+        let mut visible_only = self.clone();
+        visible_only.visible = replacement.visible;
+        visible_only == *replacement
+    }
     pub fn text_size(&self) -> f64 {
         self.font_size.unwrap_or(self.width * 4. + 12.)
     }
@@ -208,7 +220,8 @@ impl Annotation {
         resized.translated(anchored.x - actual.x, anchored.y - actual.y)
     }
     fn hit(&self, p: Point, tolerance: f64) -> bool {
-        if !self.visible
+        if self.locked
+            || !self.visible
             || self
                 .clip
                 .is_some_and(|r| r.w <= 0. || r.h <= 0. || !r.contains(p))
@@ -376,6 +389,7 @@ impl Document {
             return false;
         }
         self.add(Annotation {
+            locked: false,
             tool: Tool::Erase,
             points: vec![
                 Point::new(x as f64, y as f64),
@@ -394,7 +408,12 @@ impl Document {
     }
 
     /// Sample visible pixels, then retain just the connected fill as a new layer.
-    pub fn fill_region(&mut self, point: Point, color: (f64, f64, f64)) -> Result<bool> {
+    pub fn fill_region(
+        &mut self,
+        point: Point,
+        color: (f64, f64, f64),
+        tolerance: u8,
+    ) -> Result<bool> {
         let region = self.selection().unwrap_or(self.bounds());
         if !point.x.is_finite()
             || !point.y.is_finite()
@@ -414,6 +433,7 @@ impl Document {
             (point.x.floor() as i32 - x) as usize,
             (point.y.floor() as i32 - y) as usize,
             [rgba[0], rgba[1], rgba[2], 255],
+            tolerance,
         )?
         else {
             return Ok(false);
@@ -543,10 +563,26 @@ impl Document {
     pub fn revision(&self) -> u64 {
         self.revision
     }
+    pub fn set_locked(&mut self, index: usize, locked: bool) {
+        if self
+            .current
+            .annotations
+            .get(index)
+            .is_some_and(|a| a.locked != locked)
+        {
+            self.checkpoint();
+            self.current.annotations[index].locked = locked;
+        }
+    }
     pub fn replace_many(&mut self, replacements: Vec<(usize, Annotation)>) {
         let valid: Vec<_> = replacements
             .into_iter()
-            .filter(|(i, a)| self.current.annotations.get(*i).is_some_and(|old| old != a))
+            .filter(|(i, a)| {
+                self.current
+                    .annotations
+                    .get(*i)
+                    .is_some_and(|old| old != a && old.allows_replacement(a))
+            })
             .collect();
         if valid.is_empty() {
             return;
@@ -567,6 +603,9 @@ impl Document {
         let Some(old) = self.current.annotations.get(index) else {
             return None;
         };
+        if !old.allows_replacement(&annotation) {
+            return None;
+        }
         if *old == annotation {
             return previous;
         }
@@ -592,7 +631,7 @@ impl Document {
         let mut indices: Vec<_> = indices
             .iter()
             .copied()
-            .filter(|i| *i < self.current.annotations.len())
+            .filter(|i| self.current.annotations.get(*i).is_some_and(|a| !a.locked))
             .collect();
         indices.sort_unstable();
         indices.dedup();
@@ -613,6 +652,7 @@ impl Document {
             .filter_map(|i| self.current.annotations.get(*i))
             .map(|a| {
                 let mut copy = a.translated(12., 12.);
+                copy.locked = false;
                 copy.label = crate::i18n::format!("{} · Kopie", a.name());
                 copy
             })
@@ -667,13 +707,21 @@ impl Document {
             .current
             .annotations
             .get(index)
-            .is_some_and(|a| *a != annotation)
+            .is_some_and(|a| *a != annotation && a.allows_replacement(&annotation))
         {
             self.checkpoint();
             self.current.annotations[index] = annotation;
         }
     }
     pub fn reorder(&mut self, index: usize, up: bool) -> usize {
+        if !self
+            .current
+            .annotations
+            .get(index)
+            .is_some_and(|a| !a.locked)
+        {
+            return index;
+        }
         let target = if up {
             index.saturating_add(1)
         } else {
@@ -689,7 +737,7 @@ impl Document {
     /// Move one layer to a gap in the original, bottom-to-top stack.
     pub fn move_layer(&mut self, index: usize, gap: usize) -> Option<usize> {
         let count = self.current.annotations.len();
-        if index >= count || gap > count {
+        if index >= count || gap > count || self.current.annotations[index].locked {
             return None;
         }
         let target = gap - usize::from(index < gap);
@@ -947,7 +995,7 @@ impl Document {
         use base64::Engine;
         let mut project: Project = serde_json::from_reader(reader.take(512 * 1024 * 1024))?;
         crate::i18n::ensure!(
-            matches!(project.version, 1..=6),
+            matches!(project.version, 1..=7),
             "Unbekannte Projektversion"
         );
         for a in &project.snapshot.annotations {
@@ -1098,7 +1146,7 @@ impl SavedEdits {
                     .iter()
                     .map(|(id, png)| (*id, png.as_str()))
                     .collect(),
-                version: 6,
+                version: 7,
                 background,
                 snapshot: &self.snapshot,
                 monitors: &self.monitors,
@@ -1354,6 +1402,7 @@ impl ImageAsset {
 }
 fn image_annotation(id: u64, label: String, rect: Rect) -> Annotation {
     Annotation {
+        locked: false,
         effects: Default::default(),
         clip: None,
         label,
@@ -1373,6 +1422,78 @@ fn image_annotation(id: u64, label: String, rect: Rect) -> Annotation {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn layer_locks_protect_edits_and_survive_history_and_projects() {
+        let mut doc = Document::new(solid(40, 30, 0xffffffff), vec![]).unwrap();
+        doc.set_locked(0, true);
+        let locked = doc.annotations()[0].clone();
+        let revision = doc.revision();
+        assert_eq!(doc.hit_test(Point::new(10., 10.), 0.), None);
+        let moved = locked.translated(5., 6.);
+        doc.replace(0, moved.clone());
+        doc.replace_many(vec![(0, moved.clone())]);
+        assert_eq!(doc.replace_property(0, moved, None), None);
+        let mut renamed = locked.clone();
+        renamed.label = "Changed".into();
+        doc.replace(0, renamed);
+        doc.remove_many(&[0]);
+        assert_eq!(doc.reorder(0, true), 0);
+        assert_eq!(doc.move_layer(0, 1), None);
+        doc.set_locked(0, true);
+        assert_eq!(doc.revision(), revision);
+        assert_eq!(doc.annotations(), &[locked.clone()]);
+        doc.undo();
+        assert!(!doc.annotations()[0].locked);
+        doc.redo();
+        assert!(doc.annotations()[0].locked);
+
+        let mut hidden = locked.clone();
+        hidden.visible = false;
+        doc.replace(0, hidden);
+        assert_eq!(pixel(&doc.export().unwrap(), 10, 10)[3], 0);
+        doc.undo();
+        let copy = doc.duplicate_many(&[0])[0];
+        assert!(!doc.annotations()[copy].locked);
+        assert_eq!(doc.annotations()[0], locked);
+        // Group edits affect only unlocked members.
+        doc.replace_many(vec![
+            (0, locked.translated(2., 2.)),
+            (copy, doc.annotations()[copy].translated(2., 2.)),
+        ]);
+        assert_eq!(doc.annotations()[0], locked);
+        assert_eq!(doc.annotations()[copy].bounds().x, 14.);
+        doc.remove_many(&[0, copy]);
+        assert_eq!(doc.annotations(), &[locked.clone()]);
+
+        let mut bytes = Vec::new();
+        doc.write_project(&mut bytes).unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["version"], 7);
+        let mut recovery = Vec::new();
+        doc.recovery_edits()
+            .write(json["background"].as_str().unwrap(), &mut recovery)
+            .unwrap();
+        for encoded in [&bytes, &recovery] {
+            let mut loaded = Document::read_project(encoded.as_slice()).unwrap();
+            assert_eq!(loaded.annotations(), doc.annotations());
+            loaded.remove_many(&[0]);
+            assert_eq!(loaded.annotations().len(), 1);
+            loaded.set_locked(0, false);
+            loaded.remove_many(&[0]);
+            assert!(loaded.annotations().is_empty());
+        }
+        let mut legacy = json;
+        legacy["version"] = serde_json::json!(6);
+        legacy["snapshot"]["annotations"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("locked");
+        let loaded =
+            Document::read_project(serde_json::to_vec(&legacy).unwrap().as_slice()).unwrap();
+        assert_eq!(loaded.annotations().len(), 1);
+        assert!(!loaded.annotations()[0].locked);
+    }
 
     fn solid(w: i32, h: i32, rgba: u32) -> Pixbuf {
         let image = Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, w, h).unwrap();
@@ -1516,15 +1637,21 @@ mod tests {
             [255, 0, 0, 255]
         );
         let deleted = doc.content_id();
-        assert!(doc.fill_region(Point::new(4., 4.), (0., 0., 1.)).unwrap());
+        assert!(doc
+            .fill_region(Point::new(4., 4.), (0., 0., 1.), 0)
+            .unwrap());
         assert_eq!(doc.selection(), Some(crop));
         let output = doc.export_region(doc.bounds()).unwrap();
         assert_eq!(pixel(&output, 3, 3), [0, 0, 255, 255]);
         assert_eq!(pixel(&output, 6, 5), [0, 0, 255, 255]);
         assert_eq!(pixel(&output, 7, 5), [255, 255, 255, 255]);
         let filled = doc.content_id();
-        assert!(!doc.fill_region(Point::new(4., 4.), (0., 0., 1.)).unwrap());
-        assert!(!doc.fill_region(Point::new(11., 4.), (0., 0., 1.)).unwrap());
+        assert!(!doc
+            .fill_region(Point::new(4., 4.), (0., 0., 1.), 0)
+            .unwrap());
+        assert!(!doc
+            .fill_region(Point::new(11., 4.), (0., 0., 1.), 0)
+            .unwrap());
         assert_eq!(doc.content_id(), filled);
         let mut project = Vec::new();
         doc.write_project(&mut project).unwrap();
@@ -1947,6 +2074,7 @@ mod tests {
     fn text_size_is_independent_and_old_projects_remain_readable() {
         let mut doc = demo().unwrap();
         let mut annotation = Annotation {
+            locked: false,
             effects: Default::default(),
             clip: None,
             label: String::new(),
@@ -2036,6 +2164,7 @@ mod tests {
 
     fn rectangle(color: (f64, f64, f64)) -> Annotation {
         Annotation {
+            locked: false,
             effects: Default::default(),
             clip: None,
             label: String::new(),
@@ -2272,6 +2401,7 @@ mod tests {
         let mut doc = demo().unwrap();
         doc.select(Some(Rect::new(0.0, 0.0, 20.0, 20.0)));
         doc.add(Annotation {
+            locked: false,
             effects: Default::default(),
             clip: None,
             label: String::new(),

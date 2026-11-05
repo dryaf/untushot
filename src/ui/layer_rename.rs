@@ -28,6 +28,9 @@ impl Editor {
             let Some(doc) = s.document.as_ref() else {
                 return;
             };
+            if doc.annotations()[*index].locked {
+                return;
+            }
             (*index, doc.revision(), doc.annotations()[*index].name())
         };
         self.show_layers.set_active(true);

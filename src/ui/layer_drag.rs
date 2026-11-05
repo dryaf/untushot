@@ -181,10 +181,16 @@ fn hit(e: &Editor, x: f64, y: f64) -> Option<usize> {
             }
         }
     }
-    let eye = &rows.get(index)?.visibility;
-    let (bx, by) = eye.translate_coordinates(&e.layers, 0, 0)?;
-    if lx >= bx && lx < bx + eye.allocated_width() && ly >= by && ly < by + eye.allocated_height() {
-        return None;
+    let controls = rows.get(index)?;
+    for button in [&controls.visibility, &controls.lock] {
+        let (bx, by) = button.translate_coordinates(&e.layers, 0, 0)?;
+        if lx >= bx
+            && lx < bx + button.allocated_width()
+            && ly >= by
+            && ly < by + button.allocated_height()
+        {
+            return None;
+        }
     }
     Some(index)
 }
@@ -294,6 +300,11 @@ fn press(e: &Editor, count: i32, x: f64, y: f64, modifiers: gdk::ModifierType) -
     else {
         return false;
     };
+    if doc.annotations()[index].locked {
+        drop(s);
+        select(e, index, modifiers);
+        return true;
+    }
     let id = e.layer_drag_serial.get().wrapping_add(1);
     e.layer_drag_serial.set(id);
     *e.layer_drag.borrow_mut() = Some(Session {
@@ -509,6 +520,49 @@ impl Editor {
             "Ebenenreihenfolge geändert · Strg+Z: rückgängig",
         ));
         true
+    }
+}
+
+#[cfg(test)]
+pub(super) fn verify_locked_row(e: &Editor, index: usize) {
+    let row = e.layer_rows.borrow()[index].row.clone();
+    let (x, y) = row
+        .translate_coordinates(&e.layer_scroll, 30, row.allocated_height() / 2)
+        .unwrap();
+    assert!(press(
+        e,
+        1,
+        f64::from(x),
+        f64::from(y),
+        gdk::ModifierType::empty()
+    ));
+    assert_eq!(e.state.borrow().selected, Some(index));
+    assert!(
+        e.layer_drag.borrow().is_none(),
+        "a locked row must not arm a drag"
+    );
+    assert!(press(
+        e,
+        2,
+        f64::from(x),
+        f64::from(y),
+        gdk::ModifierType::empty()
+    ));
+    assert!(e.layer_rename.get().is_none());
+    let controls = e.layer_rows.borrow();
+    for button in [&controls[index].lock, &controls[index].visibility] {
+        let (x, y) = button
+            .translate_coordinates(
+                &e.layer_scroll,
+                button.allocated_width() / 2,
+                button.allocated_height() / 2,
+            )
+            .unwrap();
+        assert_eq!(
+            hit(e, f64::from(x), f64::from(y)),
+            None,
+            "row gestures must leave buttons clickable"
+        );
     }
 }
 

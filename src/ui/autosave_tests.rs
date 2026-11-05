@@ -13,6 +13,7 @@ fn edit(e: &Editor, name: &str) {
         .as_mut()
         .unwrap()
         .add(Annotation {
+            locked: false,
             effects: Default::default(),
             clip: None,
             label: name.into(),

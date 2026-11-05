@@ -68,6 +68,7 @@ struct State {
     color: (f64, f64, f64),
     width: f64,
     font_size: f64,
+    fill_tolerance: u8,
     pan: Point,
     mouse: Option<Point>,
     space: bool,
@@ -109,7 +110,7 @@ impl State {
         }
         let index = self.selected?;
         let annotation = self.document.as_ref()?.annotations().get(index)?;
-        if !annotation.visible {
+        if !annotation.visible || annotation.locked {
             return None;
         }
         selection::hit_handle(
@@ -151,6 +152,7 @@ struct LayerRow {
     label: gtk::Label,
     title: gtk::Stack,
     visibility: gtk::Button,
+    lock: gtk::Button,
     revision: Rc<Cell<u64>>,
     content: Option<(Annotation, i32)>,
 }
@@ -217,6 +219,8 @@ pub(crate) struct Editor {
     layers_heading: gtk::Label,
     empty_layers: gtk::Box,
     width_controls: gtk::Box,
+    fill_controls: gtk::Box,
+    fill_tolerance: gtk::SpinButton,
     width_picker: gtk::MenuButton,
     storage_button: gtk::MenuButton,
     storage_caption: gtk::Label,
@@ -713,6 +717,19 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
     color.button.set_size_request(96, 34);
     color_row.pack_end(&color.button, false, false, 0);
     sidebar.pack_start(&color_row, false, false, 0);
+    let fill_controls = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    let fill_label = gtk::Label::new(Some(crate::i18n::tr("Toleranz")));
+    fill_label.set_xalign(0.);
+    fill_controls.pack_start(&fill_label, true, true, 0);
+    let fill_tolerance = gtk::SpinButton::with_range(0., 100., 1.);
+    fill_tolerance.set_numeric(true);
+    fill_tolerance.set_width_chars(3);
+    fill_tolerance.set_tooltip_text(Some(crate::i18n::tr(
+        "Füllt zusammenhängende ähnliche Farben · 0 %: exakt · 100 %: alle Farben",
+    )));
+    fill_controls.pack_start(&fill_tolerance, false, false, 0);
+    fill_controls.pack_end(&gtk::Label::new(Some("%")), false, false, 0);
+    sidebar.pack_start(&fill_controls, false, false, 4);
     let width = gtk::SpinButton::with_range(1., 100., 1.);
     width.set_update_policy(gtk::SpinButtonUpdatePolicy::IfValid);
     width.set_value(4.);
@@ -1226,6 +1243,8 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         layers_heading,
         empty_layers,
         width_controls,
+        fill_controls,
+        fill_tolerance,
         width_picker,
         storage_button,
         storage_caption,
@@ -1304,6 +1323,7 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
             color: (0.98, 0.32, 0.27),
             width: 4.,
             font_size: 28.,
+            fill_tolerance: 0,
             pan: Point::default(),
             mouse: None,
             space: false,
@@ -1679,6 +1699,13 @@ fn build(app: &gtk::Application, args: Args) -> Rc<Editor> {
         }
     });
     let e = editor.clone();
+    editor.fill_tolerance.connect_value_changed(move |spin| {
+        if !e.syncing.get() {
+            e.state.borrow_mut().fill_tolerance = spin.value_as_int() as u8;
+            e.refresh();
+        }
+    });
+    let e = editor.clone();
     editor
         .edit_text
         .connect_clicked(move |_| e.text(Point::default()));
@@ -1997,6 +2024,7 @@ impl Editor {
             s.color = prefs.color;
             s.width = prefs.width;
             s.font_size = prefs.font_size;
+            s.fill_tolerance = prefs.fill_tolerance;
         }
         self.syncing.set(true);
         self.color.set_rgba(&gdk::RGBA::new(
@@ -2007,6 +2035,8 @@ impl Editor {
         ));
         self.width.set_value(prefs.width);
         self.font_size.set_value(prefs.font_size);
+        self.fill_tolerance
+            .set_value(f64::from(prefs.fill_tolerance));
         self.snapping.set_active(prefs.snapping);
         self.syncing.set(false);
         self.show_tools.set_active(prefs.tools_visible);
@@ -2070,6 +2100,7 @@ impl Editor {
         prefs.color = s.color;
         prefs.width = s.width;
         prefs.font_size = s.font_size;
+        prefs.fill_tolerance = s.fill_tolerance;
         prefs.history_visible = self.recent.toggle.is_active();
         prefs.tools_visible = self.show_tools.is_active();
         prefs.layers_visible = self.show_layers.is_active() || self.auto_layers_hidden.get();
@@ -2733,6 +2764,11 @@ impl Editor {
         }
         self.layers.show_all();
         let count = s.indices().len();
+        let editable = s
+            .indices()
+            .iter()
+            .any(|i| !s.document.as_ref().unwrap().annotations()[*i].locked);
+        let single_editable = count == 1 && editable;
         self.empty_layers.set_visible(layer_count == 0);
         self.layer_actions.set_visible(count > 0);
         self.property_scroll.set_visible(count > 0);
@@ -2744,6 +2780,7 @@ impl Editor {
             .set_visible(count == 1 && self.inline_edit.borrow().is_none());
         self.alignment.set_visible(count > 1);
         self.align.set_visible(count > 1);
+        self.align.set_sensitive(editable);
         self.selection_label.set_text(&if count > 1 {
             crate::i18n::format!("{count} Objekte ausgewählt")
         } else {
@@ -2757,8 +2794,7 @@ impl Editor {
         });
         self.visible.set_inconsistent(mixed);
         self.visible.set_sensitive(selected.is_some());
-        self.layer_name
-            .set_sensitive(selected.is_some() && s.selected_many.len() == 1);
+        self.layer_name.set_sensitive(single_editable);
         if self.layer_rename.get().is_none() {
             self.layer_name.set_text(
                 &selected
@@ -2768,7 +2804,8 @@ impl Editor {
                     .unwrap_or_default(),
             );
         }
-        self.delete.set_sensitive(selected.is_some());
+        self.delete.set_sensitive(editable);
+        self.edit_text.set_sensitive(single_editable);
         self.edit_text
             .set_visible(count == 1 && selected.as_ref().is_some_and(|a| a.tool == Tool::Text));
         let image_selected = count == 1
@@ -2776,7 +2813,7 @@ impl Editor {
                 .as_ref()
                 .is_some_and(|a| matches!(a.tool, Tool::Image(_)));
         self.image_effects.set_visible(image_selected);
-        self.image_effects.set_sensitive(ready);
+        self.image_effects.set_sensitive(ready && single_editable);
         if image_selected {
             let e = &selected.as_ref().unwrap().effects;
             self.border_enabled.set_active(e.border);
@@ -2799,7 +2836,7 @@ impl Editor {
             }
         }
         for spin in &self.properties {
-            spin.set_sensitive(selected.is_some() && s.selected_many.len() == 1);
+            spin.set_sensitive(single_editable);
         }
         if let Some(a) = selected {
             let r = a.bounds();
@@ -2838,7 +2875,10 @@ impl Editor {
                     .is_some_and(|d| matches!(d.annotations()[*i].tool, Tool::Image(_)))
             });
         let drawing_style = !images_only && !matches!(s.tool, Tool::Select | Tool::Marquee);
-        self.color.set_sensitive(drawing_style);
+        self.color
+            .set_sensitive(drawing_style && (count == 0 || editable));
+        self.width_controls.set_sensitive(count == 0 || editable);
+        self.font_controls.set_sensitive(count == 0 || editable);
         self.color_controls.set_visible(drawing_style);
         self.style_label.set_visible(drawing_style);
         self.properties[2].set_tooltip_text(Some(if images_only {
@@ -2855,6 +2895,8 @@ impl Editor {
         self.width.set_visible(stroke_style);
         self.width_controls.set_visible(stroke_style);
         self.width_picker.set_visible(stroke_style);
+        self.fill_controls.set_visible(s.tool == Tool::Fill);
+        self.fill_tolerance.set_value(f64::from(s.fill_tolerance));
         self.style_label.set_text(if text_only {
             crate::i18n::tr("Textstil")
         } else {
@@ -2932,12 +2974,16 @@ impl Editor {
                 let visibility = icon_button("eye", "", crate::i18n::tr("Ebene ausblenden"));
                 visibility.set_widget_name("layer-visibility");
                 visibility.style_context().add_class("flat");
+                let lock = icon_button("unlock", "", crate::i18n::tr("Ebene sperren"));
+                lock.set_widget_name("layer-lock");
+                lock.style_context().add_class("flat");
                 content.pack_start(&thumbnail, false, false, 0);
                 let title = gtk::Stack::new();
                 title.set_homogeneous(false);
                 title.add_named(&label, "name");
                 content.pack_start(&title, true, true, 0);
                 content.pack_end(&visibility, false, false, 0);
+                content.pack_end(&lock, false, false, 0);
                 row.add(&content);
                 let revision = Rc::new(Cell::new(doc.revision()));
                 let token = revision.clone();
@@ -2951,6 +2997,16 @@ impl Editor {
                         }
                     }
                 });
+                let token = revision.clone();
+                let weak = self.weak_self.clone();
+                let weak_row = row.downgrade();
+                lock.connect_clicked(move |_| {
+                    if let (Some(e), Some(row)) = (weak.upgrade(), weak_row.upgrade()) {
+                        if row.parent().as_ref() == Some(e.layers.upcast_ref()) {
+                            e.toggle_layer_lock(i, token.get());
+                        }
+                    }
+                });
                 self.layers.insert(&row, 0);
                 rows.push(LayerRow {
                     row,
@@ -2958,6 +3014,7 @@ impl Editor {
                     label,
                     title,
                     visibility,
+                    lock,
                     revision,
                     content: None,
                 });
@@ -2967,6 +3024,7 @@ impl Editor {
         for (i, (row, a)) in rows.iter_mut().zip(doc.annotations()).enumerate() {
             row.revision.set(doc.revision());
             row.visibility.set_sensitive(ready);
+            row.lock.set_sensitive(ready);
             let key = (crate::preview::relative_layer(a), scale);
             if row.content.as_ref() != Some(&key) {
                 match self.layer_previews.borrow_mut().get(doc, i, scale) {
@@ -3006,6 +3064,26 @@ impl Editor {
                         crate::i18n::tr("Ebene einblenden")
                     }
                 )));
+                if row.content.as_ref().map(|(a, _)| a.locked) != Some(a.locked) {
+                    if let Some(child) = row.lock.child() {
+                        row.lock.remove(&child);
+                    }
+                    row.lock.add(&icons::button_content(
+                        if a.locked { "lock" } else { "unlock" },
+                        "",
+                    ));
+                }
+                let lock_tip = crate::i18n::format!(
+                    "{}: {}",
+                    a.name(),
+                    if a.locked {
+                        crate::i18n::tr("Ebene entsperren")
+                    } else {
+                        crate::i18n::tr("Ebene sperren")
+                    }
+                );
+                row.lock.set_tooltip_text(Some(&lock_tip));
+                icons::accessible_name(&row.lock, &lock_tip);
                 row.content = Some(key);
             }
             if selected.contains(&i) != row.row.is_selected() {
@@ -3319,6 +3397,33 @@ impl Editor {
         self.refresh();
     }
 
+    fn toggle_layer_lock(&self, index: usize, revision: u64) {
+        {
+            let s = self.state.borrow();
+            if s.capturing
+                || s.selecting_region
+                || self.stack.visible_child_name().as_deref() != Some("editor")
+                || !s
+                    .document
+                    .as_ref()
+                    .is_some_and(|d| d.revision() == revision && index < d.annotations().len())
+            {
+                return;
+            }
+        }
+        self.commit_pending_edits();
+        layer_drag::cancel(self);
+        let mut s = self.state.borrow_mut();
+        s.drag = None;
+        s.draft = None;
+        self.property_edit.set(None);
+        if let Some(doc) = &mut s.document {
+            doc.set_locked(index, !doc.annotations()[index].locked);
+        }
+        drop(s);
+        self.refresh();
+    }
+
     fn edit_selected(&self, mut edit: impl FnMut(&mut Annotation)) {
         self.finish_text(true);
         let mut s = self.state.borrow_mut();
@@ -3410,6 +3515,9 @@ impl Editor {
         let Some(mut a) = doc.annotations().get(index).cloned() else {
             return;
         };
+        if a.locked {
+            return;
+        }
         if field >= 4 && !matches!(a.tool, Tool::Image(_)) {
             return;
         }
@@ -3496,6 +3604,9 @@ impl Editor {
             return;
         }
         if let Some(doc) = &mut s.document {
+            if indices.iter().all(|i| doc.annotations()[*i].locked) {
+                return;
+            }
             doc.remove_many(&indices);
             s.dirty = true;
         }
@@ -4576,6 +4687,15 @@ impl Editor {
     }
 
     fn text(&self, point: Point) {
+        if self.state.borrow().selected.is_some_and(|i| {
+            self.state
+                .borrow()
+                .document
+                .as_ref()
+                .is_some_and(|d| d.annotations()[i].locked)
+        }) {
+            return;
+        }
         self.finish_text(true);
         let s = self.state.borrow();
         let existing = s.selected.and_then(|i| {
@@ -4589,6 +4709,7 @@ impl Editor {
             (
                 None,
                 Annotation {
+                    locked: false,
                     effects: Default::default(),
                     clip: None,
                     label: String::new(),
@@ -5081,7 +5202,12 @@ impl Editor {
         }
         if s.tool == Tool::Fill {
             let color = s.color;
-            let result = s.document.as_mut().unwrap().fill_region(point, color);
+            let tolerance = s.fill_tolerance;
+            let result = s
+                .document
+                .as_mut()
+                .unwrap()
+                .fill_region(point, color, tolerance);
             if matches!(result, Ok(true)) {
                 s.dirty = true;
             }
@@ -5110,7 +5236,12 @@ impl Editor {
             }
             let originals: Vec<_> = indices
                 .iter()
-                .filter_map(|i| doc.annotations().get(*i).map(|a| (*i, a.clone())))
+                .filter_map(|i| {
+                    doc.annotations()
+                        .get(*i)
+                        .filter(|a| !a.locked)
+                        .map(|a| (*i, a.clone()))
+                })
                 .collect();
             let text = originals.len() == 1 && originals[0].1.tool == Tool::Text;
             let mut snap_targets = vec![bounds];
@@ -5167,6 +5298,7 @@ impl Editor {
             s.selected = None;
             s.selected_many.clear();
             s.draft = Some(Annotation {
+                locked: false,
                 effects: Default::default(),
                 clip: None,
                 label: String::new(),
@@ -5481,6 +5613,16 @@ fn draw(editor: &Editor, area: &gtk::DrawingArea, cr: &cairo::Context) -> Result
         cr.stroke()?;
     }
     let doc = s.document.as_ref().unwrap();
+    crate::preview::paint_transparency(
+        cr,
+        Rect::new(
+            view.x + viewport.x * scale,
+            view.y + viewport.y * scale,
+            viewport.w * scale,
+            viewport.h * scale,
+        ),
+        palette.base.red() + palette.base.green() + palette.base.blue() < 1.5,
+    )?;
     let mut previews = s
         .drag
         .as_ref()
@@ -5643,7 +5785,7 @@ fn draw(editor: &Editor, area: &gtk::DrawingArea, cr: &cairo::Context) -> Result
             }
             cr.stroke()?;
             cr.set_dash(&[], 0.);
-            if indices.len() == 1 && s.tool == Tool::Move {
+            if indices.len() == 1 && s.tool == Tool::Move && !a.locked {
                 for (point, handle) in selection::handles(r) {
                     cr.rectangle(
                         point.x - 4. / scale,
@@ -5908,6 +6050,7 @@ mod tests {
                 doc.replace(index, a);
             } else {
                 doc.add(Annotation {
+                    locked: false,
                     effects: Default::default(),
                     clip: None,
                     label,
@@ -8082,6 +8225,7 @@ mod tests {
             .unwrap();
         for (tool, label) in [(Tool::Text, "Hinweis"), (Tool::Rectangle, "Markierung")] {
             doc.add(Annotation {
+                locked: false,
                 effects: Default::default(),
                 tool,
                 points: vec![Point::new(10., 10.), Point::new(80., 50.)],
@@ -8750,6 +8894,214 @@ mod tests {
 
     #[test]
     #[ignore = "requires a private GTK display"]
+    fn gtk_editing_basics() {
+        gtk::init().expect("GTK needs a display");
+        let app = gtk::Application::new(
+            Some("io.github.untushot.EditingBasicsTest"),
+            gio::ApplicationFlags::NON_UNIQUE,
+        );
+        app.register(gio::Cancellable::NONE).unwrap();
+        let editor = build(&app, Args::parse_from(["untushot", "--demo"]));
+        let image = crate::pixels::from_rgba(image::RgbaImage::from_fn(120, 80, |x, _| {
+            image::Rgba(if x < 40 {
+                [100, 100, 100, 255]
+            } else if x < 80 {
+                [120, 100, 100, 255]
+            } else {
+                [0, 0, 0, 0]
+            })
+        }))
+        .unwrap();
+        editor.set_document(
+            Document::new(image, vec![]).unwrap(),
+            "locking and tolerance",
+        );
+        let until = std::time::Instant::now() + Duration::from_millis(250);
+        while std::time::Instant::now() < until {
+            glib::MainContext::default().iteration(false);
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        editor
+            .layers
+            .select_row(editor.layers.row_at_index(0).as_ref());
+        let lock = editor.layer_rows.borrow()[0].lock.clone();
+        lock.emit_clicked();
+        layer_drag::verify_locked_row(&editor, 0);
+        assert_eq!(editor.state.borrow().selected, Some(0));
+        assert!(!editor.delete.is_sensitive());
+        assert!(!editor.properties[0].is_sensitive());
+        assert!(!editor.image_effects.is_sensitive());
+        let original = editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .annotations()[0]
+            .clone();
+        assert!(original.locked);
+        editor.begin_layer_rename();
+        assert!(editor.layer_rename.get().is_none());
+        editor.nudge(10., 0., false);
+        editor.reorder(true);
+        editor.delete_layer();
+        assert_eq!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations(),
+            &[original.clone()]
+        );
+        let view = editor.state.borrow().view;
+        editor.press(view.x + 20. * view.scale, view.y + 20. * view.scale, false);
+        editor.release(view.x + 30. * view.scale, view.y + 20. * view.scale);
+        assert_eq!(editor.state.borrow().selected, None);
+        // Visibility remains available; canvas chrome never enters the export.
+        let eye = editor.layer_rows.borrow()[0].visibility.clone();
+        eye.emit_clicked();
+        let image = editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .export()
+            .unwrap();
+        assert!(image
+            .read_pixel_bytes()
+            .as_ref()
+            .chunks_exact(4)
+            .all(|p| p[3] == 0));
+        let screen = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            editor.area.allocated_width(),
+            editor.area.allocated_height(),
+        )
+        .unwrap();
+        draw(
+            &editor,
+            &editor.area,
+            &cairo::Context::new(&screen).unwrap(),
+        )
+        .unwrap();
+        screen
+            .with_data(|bytes| {
+                let x = (view.x + 30. * view.scale) as usize;
+                let y = (view.y + 30. * view.scale) as usize;
+                let pixel = |x: usize| {
+                    let at = y * screen.stride() as usize + x * 4;
+                    u32::from_ne_bytes(bytes[at..at + 4].try_into().unwrap())
+                };
+                assert_ne!(pixel(x), pixel(x + 12));
+                assert_eq!(pixel(x) >> 24, 255);
+            })
+            .unwrap();
+        eye.emit_clicked();
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("locked.untushot");
+        let preferences_path = directory.path().join("preferences.json");
+        *editor.preferences_path.borrow_mut() = Some(preferences_path.clone());
+        assert!(editor.save_project_to(&path));
+        assert!(editor.open_path(&path));
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .locked
+        );
+        draw(
+            &editor,
+            &editor.area,
+            &cairo::Context::new(&screen).unwrap(),
+        )
+        .unwrap();
+        let view = editor.state.borrow().view;
+        editor.tools[11].set_active(true);
+        assert!(editor.fill_controls.is_visible());
+        editor.fill_tolerance.set_value(10.);
+        editor.state.borrow_mut().color = (1., 0., 0.);
+        editor.refresh();
+        assert_eq!(editor.state.borrow().fill_tolerance, 10);
+        editor.save_preferences().unwrap();
+        assert_eq!(
+            crate::preferences::Preferences::load(&preferences_path)
+                .unwrap()
+                .fill_tolerance,
+            10
+        );
+        editor.press(view.x + 20. * view.scale, view.y + 20. * view.scale, false);
+        let image = editor
+            .state
+            .borrow()
+            .document
+            .as_ref()
+            .unwrap()
+            .export()
+            .unwrap();
+        let pixel = |x: usize| {
+            let at = 20 * image.rowstride() as usize + x * 4;
+            image.read_pixel_bytes().as_ref()[at..at + 4].to_vec()
+        };
+        assert_eq!(pixel(20), [255, 0, 0, 255]);
+        assert_eq!(pixel(60), [255, 0, 0, 255]);
+        assert_eq!(pixel(100), [0, 0, 0, 0]);
+        assert_eq!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0],
+            original
+        );
+        let lock = editor.layer_rows.borrow()[0].lock.clone();
+        lock.emit_clicked();
+        assert!(
+            !editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .locked
+        );
+        editor.history(false);
+        assert!(
+            editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .locked
+        );
+        editor.history(true);
+        assert!(
+            !editor
+                .state
+                .borrow()
+                .document
+                .as_ref()
+                .unwrap()
+                .annotations()[0]
+                .locked
+        );
+        editor.mark_project_saved();
+        editor.window.close();
+    }
+
+    #[test]
+    #[ignore = "requires a private GTK display"]
     fn gtk_background_layer() {
         use gdk::keys::constants as key;
         gtk::init().expect("GTK needs a display");
@@ -9166,6 +9518,7 @@ mod tests {
         let editor = build(app, Args::parse_from(["untushot", "--demo"]));
         let mut doc = document::demo().unwrap();
         let original = Annotation {
+            locked: false,
             effects: Default::default(),
             tool: Tool::Rectangle,
             points: vec![Point::new(0., 0.), Point::new(240., 160.)],

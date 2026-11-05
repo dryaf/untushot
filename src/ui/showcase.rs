@@ -347,6 +347,7 @@ fn draw_gesture(
 fn seed(e: &Editor) {
     let mut d = document();
     d.add(Annotation {
+        locked: false,
         tool: Tool::Rectangle,
         points: vec![Point::new(343., 249.), Point::new(650., 412.)],
         color: (0.96, 0.29, 0.15),
@@ -359,6 +360,7 @@ fn seed(e: &Editor) {
         effects: Default::default(),
     });
     d.add(Annotation {
+        locked: false,
         tool: Tool::Arrow,
         points: vec![Point::new(730., 210.), Point::new(610., 280.)],
         color: (0.96, 0.29, 0.15),
@@ -371,6 +373,7 @@ fn seed(e: &Editor) {
         effects: Default::default(),
     });
     d.add(Annotation {
+        locked: false,
         tool: Tool::Text,
         points: vec![Point::new(675., 135.)],
         color: (0.13, 0.36, 0.74),
@@ -1259,6 +1262,7 @@ fn menu_features(e: &Rc<Editor>, app: &gtk::Application) {
         .unwrap();
         for i in 0..24 {
             doc.add(Annotation {
+                locked: false,
                 tool: Tool::Rectangle,
                 points: vec![
                     Point::new(40. + (i % 6) as f64 * 140., 260. + (i / 6) as f64 * 70.),

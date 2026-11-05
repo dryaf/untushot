@@ -29,6 +29,8 @@ pub fn widget(name: &'static str) -> gtk::Widget {
         "quit" => Some("application-exit-symbolic"),
         "eye" => Some("view-reveal-symbolic"),
         "eye-off" => Some("view-conceal-symbolic"),
+        "lock" => Some("changes-prevent-symbolic"),
+        "unlock" => Some("changes-allow-symbolic"),
         _ => None,
     };
     if let Some(icon) =
@@ -67,6 +69,18 @@ pub fn widget(name: &'static str) -> gtk::Widget {
             }
         };
         match name {
+            "lock" | "unlock" => {
+                cr.rectangle(4., 9., 12., 9.);
+                let _ = cr.stroke();
+                cr.move_to(6., 9.);
+                cr.line_to(6., 6.);
+                cr.curve_to(6., 1., 14., 1., 14., 6.);
+                if name == "lock" {
+                    cr.line_to(14., 9.);
+                }
+                let _ = cr.stroke();
+                line(&[(10., 12.), (10., 15.)]);
+            }
             "fill" => {
                 line(&[(3., 9.), (10., 2.), (17., 9.), (10., 16.), (3., 9.)]);
                 line(&[(6., 2.), (10., 6.)]);

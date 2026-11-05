@@ -2508,5 +2508,25 @@
     "en": "Background",
     "fr": "Arrière-plan",
     "es": "Fondo"
+  },
+  "Toleranz": {
+    "en": "Tolerance",
+    "fr": "Tolérance",
+    "es": "Tolerancia"
+  },
+  "Ebene sperren": {
+    "en": "Lock layer",
+    "fr": "Verrouiller le calque",
+    "es": "Bloquear capa"
+  },
+  "Ebene entsperren": {
+    "en": "Unlock layer",
+    "fr": "Déverrouiller le calque",
+    "es": "Desbloquear capa"
+  },
+  "Füllt zusammenhängende ähnliche Farben · 0 %: exakt · 100 %: alle Farben": {
+    "en": "Fill connected similar colors · 0%: exact · 100%: all colors",
+    "fr": "Remplir les couleurs similaires contiguës · 0 % : exact · 100 % : toutes les couleurs",
+    "es": "Rellenar colores similares conectados · 0 %: exacto · 100 %: todos los colores"
   }
 }

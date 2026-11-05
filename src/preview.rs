@@ -7,6 +7,30 @@ use crate::{
 use anyhow::Result;
 use cairo::{Context, Format, ImageSurface};
 
+/// Screen-space checkerboard: bounded to the canvas and never part of document pixels.
+pub fn paint_transparency(cr: &Context, rect: Rect, dark: bool) -> Result<()> {
+    let tile = ImageSurface::create(Format::ARgb32, 24, 24)?;
+    let canvas = Context::new(&tile)?;
+    let (light, shade) = if dark { (0.28, 0.22) } else { (0.94, 0.84) };
+    canvas.set_source_rgb(light, light, light);
+    canvas.paint()?;
+    canvas.set_source_rgb(shade, shade, shade);
+    canvas.rectangle(0., 0., 12., 12.);
+    canvas.rectangle(12., 12., 12., 12.);
+    canvas.fill()?;
+    let pattern = cairo::SurfacePattern::create(&tile);
+    pattern.set_extend(cairo::Extend::Repeat);
+    pattern.set_filter(cairo::Filter::Nearest);
+    pattern.set_matrix(cairo::Matrix::new(1., 0., 0., 1., -rect.x, -rect.y));
+    cr.save()?;
+    cr.rectangle(rect.x, rect.y, rect.w, rect.h);
+    cr.clip();
+    cr.set_source(&pattern)?;
+    cr.paint()?;
+    cr.restore()?;
+    Ok(())
+}
+
 pub fn relative_layer(a: &Annotation) -> Annotation {
     let bounds = a.bounds();
     a.translated(-bounds.x, -bounds.y)
@@ -34,6 +58,7 @@ impl LayerPreviews {
         self.entries.resize_with(doc.annotations().len(), || None);
         let mut key = relative_layer(&doc.annotations()[index]);
         key.visible = true;
+        key.locked = false;
         key.label.clear();
         let entry = &mut self.entries[index];
         if entry.as_ref().map(|(a, _)| a) != Some(&key) {
@@ -221,6 +246,37 @@ fn transform(cr: &Context, key: Key, bounds: Rect) {
 mod tests {
     use super::*;
     #[test]
+    fn transparency_grid_is_clipped_and_exports_stay_transparent() {
+        let image = gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, 32, 32).unwrap();
+        image.fill(0);
+        let doc = Document::new(image, vec![]).unwrap();
+        for dark in [false, true] {
+            let surface = ImageSurface::create(Format::ARgb32, 40, 40).unwrap();
+            let cr = Context::new(&surface).unwrap();
+            paint_transparency(&cr, Rect::new(4., 4., 32., 32.), dark).unwrap();
+            surface
+                .with_data(|bytes| {
+                    let pixel = |x: usize, y: usize| {
+                        let offset = y * surface.stride() as usize + x * 4;
+                        u32::from_ne_bytes(bytes[offset..offset + 4].try_into().unwrap())
+                    };
+                    assert_eq!(pixel(0, 0), 0);
+                    assert_eq!(pixel(36, 36), 0);
+                    assert_eq!(pixel(5, 5) >> 24, 255);
+                    assert_ne!(pixel(5, 5), pixel(17, 5));
+                    assert_eq!(pixel(5, 5), pixel(17, 17));
+                    assert_eq!(pixel(5, 5) & 255 < 128, dark);
+                })
+                .unwrap();
+        }
+        let exported = doc.export().unwrap();
+        assert!(exported
+            .read_pixel_bytes()
+            .as_ref()
+            .chunks_exact(4)
+            .all(|p| p[3] == 0));
+    }
+    #[test]
     fn erasures_clear_document_pixels_without_clearing_the_ui_during_drag() {
         let bg = gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, 20, 20).unwrap();
         bg.fill(0xff0000ff);
@@ -275,6 +331,7 @@ mod tests {
         use crate::{document::Tool, geometry::Point};
         let mut doc = crate::document::demo().unwrap();
         doc.add(Annotation {
+            locked: false,
             effects: Default::default(),
             tool: Tool::Rectangle,
             points: vec![Point::new(0., 0.), Point::new(100., 50.)],
@@ -345,6 +402,7 @@ mod tests {
             doc.replace(index, a);
         }
         doc.add(Annotation {
+            locked: false,
             tool: Tool::Text,
             points: vec![Point::new(60., 100.), Point::new(180., 150.)],
             color: (0.8, 0., 0.),

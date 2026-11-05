@@ -35,6 +35,7 @@ The harness never connects to your desktop display or clipboard.
 Run `python3 tools/test_clipboard.py --suite pixel-edits` for the focused selection
 deletion and bucket-fill workflow, including keyboard shortcuts and undo/redo.
 Use `--suite background` to check the original image's layer controls and persistence.
+Use `--suite editing-basics` for layer locking, transparency display and fill tolerance.
 
 The editing-session test exercises 140 document changes, including ten text
 sessions, and traverses the complete 100-step retained undo/redo history. It then
@@ -223,7 +224,8 @@ home/state directories.
 
 The builder compiles the optimized application, runs Rust/security and installer
 tests plus the four-language, editor, layer, clipboard, portal, capture-error,
-autosave and UX GTK checks, then generates both
+autosave, selection/fill, background-layer, locking/transparency/tolerance and UX
+GTK checks, then generates both
 packages. `tools/verify_release.py` verifies their hashes, architecture, version,
 language selection and GUI startup on a private Broadway display. The AppImage
 can be extracted for these checks without FUSE. `--skip-checks` still compiles and

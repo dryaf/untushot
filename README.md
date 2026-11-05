@@ -39,16 +39,16 @@ Prebuilt packages are available for **x86-64 / amd64**:
 
 ```sh
 # Debian / Ubuntu package
-sudo apt install ./untushot_0.9.0_amd64.deb
+sudo apt install ./untushot_1.0.0_amd64.deb
 
 # Portable AppImage
-chmod +x UntuShot-0.9.0-x86_64.AppImage
-./UntuShot-0.9.0-x86_64.AppImage
+chmod +x UntuShot-1.0.0-x86_64.AppImage
+./UntuShot-1.0.0-x86_64.AppImage
 ```
 
 Without FUSE, prefix the AppImage command with `APPIMAGE_EXTRACT_AND_RUN=1`.
 The release includes `SHA256SUMS` and build information. See the
-[release notes](docs/releases/v0.9.0.md) for installation details.
+[release notes](docs/releases/v1.0.0.md) for installation details.
 
 ### Build from source
 
@@ -231,11 +231,17 @@ Click to select one layer, Ctrl-click to toggle additional layers, or Shift-clic
 to select a range. Double-click a name or press **F2** to rename it in place.
 Drag a row to reorder it: insertion guides show the target, and the list scrolls
 near its edges. The eye icon hides a layer without deleting it.
+The padlock protects a layer from moving, resizing, renaming, reordering and
+deletion. Locked layers are skipped when clicking the canvas; select their row
+to unlock them. You can still toggle visibility or make an unlocked duplicate.
+Locks support undo/redo and persist in projects and recovery.
 
 The original screenshot or opened image starts as a **Background** layer. You can
 select, move, resize, hide, duplicate, reorder, rename, or delete it like any other
 image layer. Moving or deleting it reveals transparency while the canvas keeps its
-size. Existing projects gain this layer automatically when opened.
+size. A checkerboard makes transparent areas visible in the editor, including
+partly transparent pixels; it is never included in exported or copied images.
+Existing projects gain this layer automatically when opened.
 
 ![Layer selection, inline renaming, drag-and-drop insertion guides and visibility controls](docs/media/07-layers.gif)
 
@@ -446,9 +452,13 @@ This README and all feature-tour GIFs use English.
 
 Select pixels with `M`, then use **Delete selection** or press `Delete` to clear
 the visible content in that rectangle. Use **Fill** (`F`) and click to fill a
-connected area of the same color, including transparent space, with the current
-color. Both actions respect the crop, support undo/redo, and are saved in editable
-projects. Deletions retain the underlying layers; fills create a new image layer.
+connected area with the current color, including transparent space. **Tolerance**
+runs from 0% (exact color) to 100% (all colors); increase it to include similar
+colors. Matching compares each pixel with the clicked color, including opacity.
+The last tolerance is remembered. Both actions respect the crop, support undo/redo,
+and are saved in editable projects. Deletions retain the underlying layers; fills
+create a new image layer. These operations act on the visible composite, so they
+can cover locked layers without changing those layers.
 
 ¹ Set up by the supported desktop integration; other desktops can bind the same
 command manually. Closing the window quits UntuShot by default. Enable **Keep running

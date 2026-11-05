@@ -211,7 +211,7 @@ def main():
         run('python3', '-m', 'unittest', 'discover', '-s', 'packaging/tests')
         for language in ('en', 'de', 'fr', 'es'):
             run('python3', 'tools/test_clipboard.py', '--release', '--suite', 'localization', '--language', language)
-        for suite in ('editor', 'layers', 'clipboard', 'capture-errors', 'ux-changes', 'portal', 'autosave'):
+        for suite in ('editor', 'layers', 'clipboard', 'capture-errors', 'ux-changes', 'portal', 'autosave', 'pixel-edits', 'background', 'editing-basics'):
             run('python3', 'tools/test_clipboard.py', '--release', '--suite', suite)
     artifacts = [debian_package(binary, version), appimage_package(binary, version)]
     build_info = dict(version=version, commit=output('git', '-c', f'safe.directory={ROOT}', 'rev-parse', 'HEAD'),

@@ -11,6 +11,7 @@ pub struct Preferences {
     pub color: (f64, f64, f64),
     pub width: f64,
     pub font_size: f64,
+    pub fill_tolerance: u8,
     pub snapping: bool,
     pub tools_visible: bool,
     pub layers_visible: bool,
@@ -28,6 +29,7 @@ impl Default for Preferences {
             color: (0.98, 0.32, 0.27),
             width: 4.,
             font_size: 28.,
+            fill_tolerance: 0,
             snapping: true,
             tools_visible: true,
             layers_visible: true,
@@ -71,6 +73,7 @@ impl Preferences {
         }
         p.export_directory = p.export_directory.filter(|p| p.is_absolute() && p.is_dir());
         p.layer_panel_width = p.layer_panel_width.clamp(252, 16384);
+        p.fill_tolerance = p.fill_tolerance.min(100);
         Ok(p)
     }
     pub fn save(&self, path: &Path) -> Result<()> {
@@ -104,6 +107,7 @@ mod tests {
         };
         let defaults = serde_json::from_str::<Preferences>("{}").unwrap();
         assert!(defaults.snapping);
+        assert_eq!(defaults.fill_tolerance, 0);
         assert!(!defaults.close_to_tray);
         assert!(!defaults.close_behavior_explained);
         let p = Preferences {
@@ -114,6 +118,7 @@ mod tests {
             width: 7.,
             layer_panel_width: 380,
             font_size: 42.,
+            fill_tolerance: 17,
             tools_visible: false,
             export_directory: Some(dir.path().to_path_buf()),
             monitor: Some(m.clone()),
@@ -127,6 +132,8 @@ mod tests {
         assert_eq!(loaded.monitor_index(&[other, m.clone()]), Some(1));
         assert_eq!(loaded.monitor_index(&[]), None);
         assert_eq!(loaded.monitor_index(&[m.clone(), m]), None);
+        std::fs::write(&path, r#"{"fill_tolerance":255}"#).unwrap();
+        assert_eq!(Preferences::load(&path).unwrap().fill_tolerance, 100);
         std::fs::write(&path, r#"{"width":0}"#).unwrap();
         assert!(Preferences::load(&path).is_err());
     }
